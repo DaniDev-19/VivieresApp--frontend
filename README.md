@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💻 Viveres App - Interface de Administración y POS
 
-## Getting Started
+Este es el frontend de alto rendimiento para **Viveres App**, una aplicación web moderna diseñada para la gestión de ventas en tiempo real, control de inventario y monitoreo financiero.
 
-First, run the development server:
+Desarrollado y Diseñado por: **DaniDev - Software Engineer**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🚀 Stack Tecnológico
+
+La interfaz se ha construido utilizando las tecnologías más vanguardistas para garantizar una experiencia de usuario fluida y reactiva (SPA-like feel).
+
+- **Framework:** [Next.js 16](https://nextjs.org/) (App Router & React Server Components)
+- **Lenguaje:** TypeScript (Tipado fuerte para robustez)
+- **Estilos:** [Tailwind CSS 4](https://tailwindcss.com/) (Sistema de diseño moderno)
+- **Estado Global:** [Zustand](https://github.com/pmndrs/zustand) (Ligero y escalable)
+- **Fetching de Datos:** [React Query (TanStack)](https://tanstack.com/query) (Caché y sincronización de servidor)
+- **Animaciones:** Framer Motion (Micro-interacciones premium)
+- **UI Components:** Radix UI (Accesibilidad y componentes headless)
+- **Notificaciones:** Sonner (Toasts eficientes)
+
+---
+
+## 📂 Estructura de Carpetas
+
+Basado en el estándar de **Feature-Oriented Folder Structure** mezclado con el App Router de Next.js.
+
+```text
+frontend/
+├── app/                    # Páginas y Layouts (Next.js App Router)
+│   ├── dashboard/          # Métricas y Resumen
+│   ├── pos/                # Interfaz de Punto de Venta
+│   ├── inventory/          # Gestión de Productos y Categorías
+│   ├── sales/              # Historial de Ventas
+│   └── ...
+├── components/             # Componentes React Reutilizables
+│   ├── ui/                 # Componentes de diseño base (Botones, Inputs, Modales)
+│   ├── shared/             # Lógica compartida entre módulos
+│   └── [feature]/          # Componentes específicos de una funcionalidad
+├── store/                  # Gestión de estados (Zustand Stores)
+├── hooks/                  # Hooks personalizados (Lógica extraída)
+├── services/               # Llamadas a API (AxiosConfig, Endpoints)
+├── lib/                    # Utilidades y funciones auxiliares
+└── public/                 # Assets estáticos (Imágenes, SVGs)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛡️ Seguridad y Buenas Prácticas
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Protección de Rutas:** Middleware de Next.js para validar la sesión antes de renderizar páginas protegidas.
+2. **Contexto de Autenticación:** Manejo centralizado de tokens JWT con persistencia segura.
+3. **Axios Interceptors:** Manejo automático de errores 401 (Unauthorized) para cerrar sesión si el token expira.
+4. **Validación de Formularios:** Uso riguroso de `React Hook Form` + `Zod` para validar datos en el cliente antes de enviar al servidor.
+5. **Optimización de Renderizado:** Uso de `React.memo` y `useCallback` en secciones críticas como el carrito del POS para evitar re-renders innecesarios.
+6. **Diseño Adaptativo (PWA Ready):** Interfaz 100% responsiva y optimizada para uso en tablets o terminales POS.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Instalación y Desarrollo
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Instalar Dependencias:**
+   ```bash
+   bun install  # O npm install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Configurar el Entorno:**
+   Crea un `.env.local`:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+   ```
 
-## Deploy on Vercel
+3. **Ejecutar Desarrollo:**
+   ```bash
+   bun run dev  # O npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. **Compilar para Producción:**
+   ```bash
+   bun run build
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🎨 Principios de Diseño
+
+- **Rich Aesthetics:** Colores vibrantes, gradientes sutiles y modo oscuro nativo.
+- **Glassmorphism:** Uso de efectos de transparencia y desenfoque en modales y barras de navegación.
+- **Micro-Animations:** Transiciones suaves que guían la atención del usuario sin ser intrusivas.
+
+---
+
+© 2026 - Proyecto **Viveres App** | Desarrollado con ❤️ por **DaniDev**
