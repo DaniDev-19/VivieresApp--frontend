@@ -24,11 +24,11 @@ export const usePublicStore = create<PublicStore>()(
     persist(
         (set, get) => ({
             cart: [],
-            addToCart: (product: Product) => set((state: PublicStore) => {
-                const existing = state.cart.find(i => i.id === product.id);
+            addToCart: (product: any) => set((state: any) => {
+                const existing = state.cart.find((i: any) => i.id === product.id);
                 if (existing) {
                     return {
-                        cart: state.cart.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
+                        cart: state.cart.map((i: any) => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
                     };
                 }
                 return {
