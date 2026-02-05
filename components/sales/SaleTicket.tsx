@@ -86,7 +86,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
         centerText("VIVERES APP", y, 14, true); y += 6;
         centerText("\"Calidad y servicio a tu puerta\"", y, 8); y += 5;
 
-        doc.setLineDash([1, 1], 0);
+        (doc as any).setLineDash([1, 1], 0);
         doc.line(4, y, 76, y); y += 4; // Separador
 
         centerText("RIF: J-12345678-9", y, 9, true); y += 4;
