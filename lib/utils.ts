@@ -15,5 +15,6 @@ export function formatCurrency(value: number) {
 export function getImageUrl(path?: string) {
   if (!path) return null;
   if (path.startsWith("http")) return path;
-  return `http://localhost:8000${path}`;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+  return `${baseUrl}${path}`;
 }
