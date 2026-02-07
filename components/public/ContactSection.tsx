@@ -133,18 +133,18 @@ export function ContactSection() {
 
                     {/* Map Integration */}
                     <div className="w-full lg:w-1/2">
-                        <div className="relative h-[400px] md:h-full min-h-[400px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white dark:border-gray-800 ring-1 ring-gray-100 dark:ring-gray-800">
+                        <div className="relative aspect-square md:aspect-video lg:aspect-auto lg:h-full min-h-[350px] md:min-h-[400px] lg:min-h-[500px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white dark:border-gray-800 ring-1 ring-gray-100 dark:ring-gray-800">
                             <iframe
                                 src="https://www.google.com/maps/embed?pb=!1m13!1m8!1m3!1d3922.0117771239097!2d-71.6229949!3d10.5782509!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTDCsDM0JzQxLjciTiA3McKwMzcnMjIuOCJX!5e0!3m2!1ses!2sve!4v1766962895880!5m2!1ses!2sve"
                                 width="100%"
                                 height="100%"
-                                style={{ border: 0 }}
+                                style={{ border: 0, position: 'absolute', top: 0, left: 0 }}
                                 allowFullScreen={true}
                                 loading="lazy"
                                 title="Ubicación de la tienda"
                                 className="w-full h-full"
                             ></iframe>
-                            <div className="absolute top-4 left-4">
+                            <div className="absolute top-4 left-4 z-10">
                                 <span className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold text-indigo-600 shadow-xl border border-indigo-50">
                                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                                     ¡Abierto ahora mismo!
