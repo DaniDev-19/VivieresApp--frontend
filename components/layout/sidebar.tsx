@@ -30,10 +30,10 @@ export function Sidebar() {
 
     const SidebarContent = () => (
         <div className="flex h-full flex-col px-3 py-4">
-            <div className="mb-8 flex flex-col items-center justify-center pt-4 gap-3">
-                <img src="/logo.png" alt="Viveres App Logo" className="w-24 h-24 object-contain rounded-full shadow-lg border-2 border-indigo-50 dark:border-indigo-900/50" />
-                <div className="text-2xl font-bold bg-linear-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-                    Viveres Valentina
+            <div className="mb-8 flex flex-col items-center justify-center pt-4 px-2 text-center">
+                {/* <img src="/logo.png" alt={`${process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"} Logo`} className="w-24 h-24 object-contain rounded-full shadow-lg border-2 border-indigo-50 dark:border-indigo-900/50 mb-3" /> */}
+                <div className="text-x font-black leading-tight bg-linear-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent uppercase tracking-tight">
+                    {process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"}
                 </div>
             </div>
 

@@ -51,12 +51,12 @@ Utilizamos `@tanstack/react-query` para gestionar la comunicación con la API:
 
 ---
 
-## 🛠️ Refinamiento de Pedidos Públicos (Próximamente)
+## 🛠️ Catálogo Público y Pedidos Web (E-commerce)
 
-Estamos trabajando en un catálogo público donde:
-- El cliente selecciona productos sin login.
-- Genera un pedido que se envía al backend.
-- El administrador recibe una notificación y aprueba/rechaza el pedido desde el dashboard.
+ViveresApp cuenta con una tienda pública de alto rendimiento:
+1. **Catálogo en Vivo**: Visualización dinámica de productos con precios actualizados según tasa.
+2. **Checkout WhatsApp**: Generación automática de pedidos formateados para recepción instantánea vía móvil.
+3. **Gestión de Estatus**: El administrador puede rastrear y actualizar el progreso de cada pedido web desde el módulo dedicado.
 
 ---
 

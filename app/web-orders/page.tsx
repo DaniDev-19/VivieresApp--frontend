@@ -1,18 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { formatCurrency } from "@/lib/utils";
-import { CheckCircle, XCircle, Phone, Image as ImageIcon, ExternalLink, Clock } from "lucide-react";
+import { formatCurrency, getImageUrl, formatWhatsAppLink } from "@/lib/utils";
+import { CheckCircle, XCircle, Phone, Image as ImageIcon, ExternalLink, Clock, Truck, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { WebOrder, WebOrderItem } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { toast } from "sonner";
-import { useState } from "react";
 
 export default function WebOrdersPage() {
     const queryClient = useQueryClient();
+    const [page, setPage] = useState(1);
+    const limit = 12;
     const [confirmAction, setConfirmAction] = useState<{
         isOpen: boolean;
         type: 'approve' | 'reject' | null;
@@ -20,21 +22,33 @@ export default function WebOrdersPage() {
     }>({ isOpen: false, type: null, order: null });
 
     // Fetch Orders
-    const { data: orders, isLoading } = useQuery({
-        queryKey: ["web_orders"],
-        queryFn: async () => (await api.get("/web_orders/?limit=50")).data,
-        refetchInterval: 15000
+    const { data, isLoading } = useQuery({
+        queryKey: ["web-orders", page],
+        queryFn: async () => (await api.get(`/web-orders/?skip=${(page - 1) * limit}&limit=${limit}`)).data,
     });
+
+    const orders = data?.items || [];
+    const total = data?.total || 0;
+    const totalPages = Math.ceil(total / limit);
 
     // Update Status Mutation
     const statusMutation = useMutation({
         mutationFn: async ({ id, status }: { id: number, status: string }) => {
-            await api.put(`/web_orders/${id}/status?status=${status}`);
+            const { data } = await api.put(`/web-orders/${id}/status?status=${status}`);
+            return data;
         },
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["web_orders"] });
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["web-orders"] });
             const action = variables.status === 'approved' ? 'aprobado' : 'rechazado';
             toast.success(`Pedido ${action} correctamente`);
+
+            // Handle WhatsApp redirect on approval
+            if (variables.status === 'approved' && data.sale_id) {
+                const phone = data.customer_data?.phone;
+                const msg = `✅ ¡Tu pedido #${data.id} ha sido APROBADO! \n\nEstamos procesando el despacho.`;
+                window.open(formatWhatsAppLink(phone || "", msg), '_blank');
+            }
+
             setConfirmAction({ isOpen: false, type: null, order: null });
         },
         onError: (error: any) => {
@@ -47,32 +61,53 @@ export default function WebOrdersPage() {
     const handleWhatsApp = (order: WebOrder) => {
         const phone = order.customer_data.phone;
         const msg = `Hola ${order.customer_data.name}, hemos recibido tu pedido web #${order.id} por $${order.total_estimated_usd}. Estamos validando tu pago.`;
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        window.open(formatWhatsAppLink(phone || "", msg), '_blank');
     };
 
     const confirmStatusUpdate = () => {
         if (!confirmAction.order || !confirmAction.type) return;
         const newStatus = confirmAction.type === 'approve' ? 'approved' : 'rejected';
         statusMutation.mutate({ id: confirmAction.order.id, status: newStatus });
-
-        // Optionally open WhatsApp with approval message if approved
-        if (newStatus === 'approved') {
-            const phone = confirmAction.order.customer_data.phone;
-            const msg = `✅ ¡Tu pedido #${confirmAction.order.id} ha sido APROBADO! Estamos procesando el despacho.`;
-            setTimeout(() => window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank'), 1000);
-        }
     };
 
     return (
         <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    Pedidos Web
-                    <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full dark:bg-gray-800">
-                        {orders?.length || 0} Total
-                    </span>
-                </h2>
-                <p className="text-gray-500">Gestiona los pedidos recibidos desde el catálogo público.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
+                        Pedidos Web
+                        {total > 0 && (
+                            <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs rounded-full font-black border border-indigo-200/50">
+                                {total} Total
+                            </span>
+                        )}
+                    </h2>
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">Gestiona los pedidos recibidos desde el catálogo público.</p>
+                </div>
+
+                {totalPages > 1 && (
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="p-2 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        </button>
+
+                        <div className="px-4 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300">
+                            Página <span className="text-indigo-600 dark:text-indigo-400 mx-1">{page}</span> de <span className="mx-1">{totalPages}</span>
+                        </div>
+
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="p-2 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -105,6 +140,19 @@ export default function WebOrdersPage() {
                                 <span className="font-bold text-indigo-600 text-lg">{formatCurrency(order.total_estimated_usd)}</span>
                             </div>
 
+                            {/* Delivery Info */}
+                            <div className="bg-indigo-50/50 dark:bg-indigo-900/20 p-3 rounded-lg text-sm border border-indigo-100/50 dark:border-indigo-800/50">
+                                <div className="flex items-center gap-2 font-bold text-indigo-700 dark:text-indigo-300">
+                                    <Truck className="w-4 h-4" />
+                                    {order.delivery_type || 'Retiro en Tienda'}
+                                </div>
+                                {order.delivery_cost && order.delivery_cost > 0 ? (
+                                    <p className="text-xs text-indigo-500 mt-0.5">Costo de despacho: {formatCurrency(order.delivery_cost)}</p>
+                                ) : (
+                                    <p className="text-xs text-indigo-500 mt-0.5">Sin costo de envío</p>
+                                )}
+                            </div>
+
                             {/* Payment Info */}
                             <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg text-sm space-y-1">
                                 <div className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-300">
@@ -113,7 +161,7 @@ export default function WebOrdersPage() {
                                 </div>
                                 {order.transaction_ref && <p className="text-xs text-gray-500">Ref: {order.transaction_ref}</p>}
                                 {order.payment_proof_url && (
-                                    <a href={order.payment_proof_url} target="_blank" className="flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1">
+                                    <a href={getImageUrl(order.payment_proof_url) || "#"} target="_blank" className="flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1">
                                         <ImageIcon className="w-3 h-3" /> Ver Capture de Pago <ExternalLink className="w-3 h-3" />
                                     </a>
                                 )}
@@ -181,6 +229,5 @@ export default function WebOrdersPage() {
 }
 
 function CreditCardIcon({ method }: { method: string }) {
-    // Simple icon mapping or just generic
     return <div className="w-2 h-2 rounded-full bg-indigo-500" />
 }

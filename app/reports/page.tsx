@@ -4,14 +4,16 @@ import { useState } from "react";
 import {
     FileText,
     Download,
-    Calendar,
     Package,
     Tag,
     Printer,
     Loader2,
     Search,
     Plus,
-    Trash2
+    Trash2,
+    Trophy,
+    TrendingDown,
+    ArrowUpRight
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -34,11 +36,44 @@ export default function ReportsPage() {
     const [labelQueue, setLabelQueue] = useState<any[]>([]);
     const [loadingLabels, setLoadingLabels] = useState(false);
 
+    // Rankings State
+    const [rankingsDateStart, setRankingsDateStart] = useState("");
+    const [rankingsDateEnd, setRankingsDateEnd] = useState("");
+
     // Fetch Products for Labels
     const { data: products, isLoading: isLoadingProducts } = useQuery({
         queryKey: ["products"],
         queryFn: async () => (await api.get("/products")).data,
         enabled: activeTab === "labels"
+    });
+
+    const { data: rankings, isLoading: isLoadingRankings } = useQuery({
+        queryKey: ["rankings", rankingsDateStart, rankingsDateEnd],
+        queryFn: async () => (await api.get("/reports/rankings", {
+            params: {
+                start_date: rankingsDateStart || undefined,
+                end_date: rankingsDateEnd || undefined
+            }
+        })).data,
+        enabled: activeTab === "rankings"
+    });
+
+    const { data: customerRanking, isLoading: isLoadingCustomers } = useQuery({
+        queryKey: ["customer-ranking"],
+        queryFn: async () => (await api.get("/reports/customers/ranking")).data,
+        enabled: activeTab === "rankings" || activeTab === "analytics"
+    });
+
+    const { data: annualGrowth, isLoading: isLoadingGrowth } = useQuery({
+        queryKey: ["annual-growth"],
+        queryFn: async () => (await api.get("/reports/growth/annual")).data,
+        enabled: activeTab === "analytics"
+    });
+
+    const { data: providersPerformance, isLoading: isLoadingProviders } = useQuery({
+        queryKey: ["providers-performance"],
+        queryFn: async () => (await api.get("/reports/providers/performance")).data,
+        enabled: activeTab === "rankings"
     });
 
     const filteredProducts = products?.filter((p: any) =>
@@ -94,7 +129,7 @@ export default function ReportsPage() {
                 params,
                 responseType: "blob",
             });
-            triggerDownload(response.data, `Reporte_Ventas_ViveresApp_${format}`);
+            triggerDownload(response.data, `Reporte_Ventas_${format}`);
             toast.success(`Reporte ${format.toUpperCase()} descargado correctamente`);
         } catch (error) {
             console.error(error);
@@ -115,7 +150,7 @@ export default function ReportsPage() {
                 params,
                 responseType: "blob",
             });
-            triggerDownload(response.data, `Reporte_Inventario_ViveresApp_${format}`);
+            triggerDownload(response.data, `Reporte_Inventario_${format}`);
             toast.success(`Reporte de Inventario descargado`);
         } catch (error) {
             console.error(error);
@@ -138,7 +173,7 @@ export default function ReportsPage() {
             const response = await api.post("/reports/labels/generate", payload, {
                 responseType: "blob"
             });
-            triggerDownload(response.data, "Etiquetas_ViveresApp");
+            triggerDownload(response.data, "Etiquetas_Productos");
             toast.success("Etiquetas generadas exitosamente");
         } catch (error) {
             console.error(error);
@@ -162,6 +197,8 @@ export default function ReportsPage() {
                         { id: "sales", name: "Ventas", icon: FileText },
                         { id: "inventory", name: "Inventario", icon: Package },
                         { id: "labels", name: "Etiquetas", icon: Tag },
+                        { id: "rankings", name: "Rankings", icon: Trophy },
+                        { id: "analytics", name: "Crecimiento", icon: ArrowUpRight },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -368,6 +405,211 @@ export default function ReportsPage() {
                                     {loadingLabels ? <Loader2 className="h-5 w-5 animate-spin" /> : <Printer className="h-5 w-5" />}
                                     Generar PDF de Etiquetas
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "rankings" && (
+                    <div className="space-y-6">
+                        {/* Filters */}
+                        <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-wrap items-end gap-4">
+                            <div className="flex-1 min-w-[200px]">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Desde</label>
+                                <input
+                                    type="date"
+                                    value={rankingsDateStart}
+                                    onChange={(e) => setRankingsDateStart(e.target.value)}
+                                    className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                />
+                            </div>
+                            <div className="flex-1 min-w-[200px]">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Hasta</label>
+                                <input
+                                    type="date"
+                                    value={rankingsDateEnd}
+                                    onChange={(e) => setRankingsDateEnd(e.target.value)}
+                                    className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                />
+                            </div>
+                            <button
+                                onClick={() => { setRankingsDateStart(""); setRankingsDateEnd(""); }}
+                                className="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors"
+                            >
+                                Limpiar Filtros
+                            </button>
+                        </div>
+
+                        {isLoadingRankings ? (
+                            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
+                                <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mb-4" />
+                                <p className="text-gray-500 font-medium">Calculando rankings en tiempo real...</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-6 lg:grid-cols-3">
+                                {/* Sales Leaders */}
+                                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                                            <Trophy className="h-5 w-5 text-amber-500" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 dark:text-white">Líderes de Ventas</h3>
+                                            <p className="text-xs text-gray-500 font-medium tracking-tight">Ventas concretadas por usuario</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 flex-1">
+                                        {rankings?.top_users?.length > 0 ? rankings.top_users.map((user: any, idx: number) => (
+                                            <div key={user.id} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-800">
+                                                <div className={`
+                                                    h-10 w-10 rounded-xl flex items-center justify-center font-black text-lg
+                                                    ${idx === 0 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                                                        idx === 1 ? "bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300" :
+                                                            idx === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" :
+                                                                "bg-gray-50 text-gray-400 dark:bg-gray-800 dark:text-gray-500"}
+                                                `}>
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-bold text-sm text-gray-900 dark:text-white capitalize truncate">{user.username}</p>
+                                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{user.transactions} Ventas</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-sm text-gray-900 dark:text-white">${user.total_amount.toFixed(2)}</p>
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <p className="text-center text-sm text-gray-400 py-10">Sin datos de ventas en este periodo</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Top Products */}
+                                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+                                            <ArrowUpRight className="h-5 w-5 text-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 dark:text-white">Top Productos</h3>
+                                            <p className="text-xs text-gray-500 font-medium tracking-tight">Más vendidos por unidades</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6 flex-1">
+                                        {rankings?.top_products?.length > 0 ? rankings.top_products.map((prod: any, idx: number) => (
+                                            <div key={prod.id} className="space-y-2">
+                                                <div className="flex justify-between items-end">
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[70%]">{prod.name}</p>
+                                                    <p className="text-xs font-black text-indigo-600 dark:text-indigo-400">{prod.value} uds.</p>
+                                                </div>
+                                                <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
+                                                        style={{ width: `${Math.min(100, (prod.value / rankings.top_products[0].value) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <p className="text-center text-sm text-gray-400 py-10">Sin registros de productos</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Low Rotation */}
+                                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2 bg-rose-50 dark:bg-rose-900/20 rounded-xl">
+                                            <TrendingDown className="h-5 w-5 text-rose-500" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 dark:text-white">Baja Rotación</h3>
+                                            <p className="text-xs text-gray-500 font-medium tracking-tight">Productos con menos ventas</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 flex-1">
+                                        {rankings?.low_products?.length > 0 ? rankings.low_products.map((prod: any) => (
+                                            <div key={prod.id} className="flex items-center justify-between p-3 rounded-2xl bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800">
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate max-w-[70%]">{prod.name}</p>
+                                                <span className="px-2 py-1 bg-white dark:bg-gray-800 text-[10px] font-black text-rose-600 dark:text-rose-400 rounded-lg shadow-sm">
+                                                    {prod.value} vtas.
+                                                </span>
+                                            </div>
+                                        )) : (
+                                            <p className="text-center text-sm text-gray-400 py-10">Sin productos analizados</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Best Clients Section */}
+                        <div className="grid gap-6 lg:grid-cols-2 mt-6">
+                            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                                <h3 className="text-lg font-black text-gray-900 dark:text-white mb-6">Mejores Clientes</h3>
+                                <div className="space-y-4">
+                                    {customerRanking?.slice(0, 5).map((c: any, idx: number) => (
+                                        <div key={c.id} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center font-bold text-indigo-600">
+                                                    #{idx + 1}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-sm text-gray-900 dark:text-white">{c.name}</p>
+                                                    <p className="text-xs text-gray-500">{c.orders} pedidos</p>
+                                                </div>
+                                            </div>
+                                            <p className="font-black text-indigo-600 dark:text-indigo-400">${c.amount.toFixed(2)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                                <h3 className="text-lg font-black text-gray-900 dark:text-white mb-6">Mejores Proveedores</h3>
+                                <div className="space-y-4">
+                                    {providersPerformance?.slice(0, 5).map((p: any) => (
+                                        <div key={p.id} className="p-4 bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <p className="font-bold text-sm text-gray-900 dark:text-white">{p.name}</p>
+                                                <span className={`px-2 py-1 rounded text-[10px] font-black ${p.reliability > 80 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                    {p.reliability.toFixed(1)}% fiabilidad
+                                                </span>
+                                            </div>
+                                            <div className="flex gap-4 text-xs text-gray-500">
+                                                <span>Total: {p.total_orders}</span>
+                                                <span>Logrados: {p.completed_orders}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "analytics" && (
+                    <div className="space-y-6">
+                        <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-8">Crecimiento Anual</h3>
+                            <div className="grid gap-8 md:grid-cols-2">
+                                {annualGrowth?.map((yearData: any) => (
+                                    <div key={yearData.year} className="p-6 rounded-3xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30">
+                                        <h4 className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mb-4">{yearData.year}</h4>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-end">
+                                                <p className="text-sm font-bold text-gray-500">Total USD</p>
+                                                <p className="text-2xl font-black text-gray-900 dark:text-white">${yearData.total_usd.toLocaleString()}</p>
+                                            </div>
+                                            <div className="flex justify-between items-end">
+                                                <p className="text-sm font-bold text-gray-500">Est. VES</p>
+                                                <p className="text-lg font-bold text-indigo-500">Bs. {yearData.total_bs.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>

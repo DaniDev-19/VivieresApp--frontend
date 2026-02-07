@@ -69,20 +69,20 @@ export function PublicFooter() {
                                 </div>
                                 <div>
                                     <span className="block text-sm font-bold text-gray-900 dark:text-white">DaniDev</span>
-                                    <span className="text-[10px] text-gray-400 uppercase">Software Developer</span>
+                                    <span className="text-[10px] text-gray-400 uppercase">Software Engineer</span>
                                 </div>
                             </div>
                             <div className="flex gap-4 pl-1">
-                                <a href="https://github.com/JDPR19" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <a href="https://github.com/DaniDev-19" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                     <Github className="w-4 h-4" />
                                 </a>
                                 <a href="https://linkedin.com/in/jesus-daniel-perdomo-b15578261" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-600 transition-colors">
                                     <Linkedin className="w-4 h-4" />
                                 </a>
-                                <a href="https://danidev.me" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-600 transition-colors">
+                                <a href="https://dani-dev-tan.vercel.app/es" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-600 transition-colors">
                                     <Globe className="w-4 h-4" />
                                 </a>
-                                <a href="https://www.instagram.com/jdbaddev/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500 transition-colors">
+                                <a href="https://www.instagram.com/danidev19/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500 transition-colors">
                                     <Instagram className="w-4 h-4" />
                                 </a>
                             </div>
@@ -104,16 +104,16 @@ export function PublicFooter() {
                                     </DialogHeader>
                                     <div className="space-y-4 py-4">
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            Tu apoyo me ayuda a seguir creando software de calidad y mantener estos proyectos libres.
+                                            Tu apoyo me ayuda a seguir creando software de calidad.
                                         </p>
                                         <div className="space-y-3">
-                                            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                                            {/* <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
                                                 <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Binance (Pay ID)</span>
                                                 <code className="text-indigo-600 dark:text-indigo-400 font-mono text-sm">123456789</code>
-                                            </div>
+                                            </div> */}
                                             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-                                                <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Zinli (Email)</span>
-                                                <code className="text-indigo-600 dark:text-indigo-400 font-mono text-sm">danidev@gmail.com</code>
+                                                <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Instagram (Red Social)</span>
+                                                <code className="text-indigo-600 dark:text-indigo-400 font-mono text-sm">@danidev19</code>
                                             </div>
                                         </div>
                                     </div>
@@ -133,7 +133,7 @@ export function PublicFooter() {
                                     <Heart className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <span className="block text-sm font-bold text-gray-900 dark:text-white">BatyCode</span>
+                                    <span className="block text-sm font-bold text-gray-900 dark:text-white">BytiCode</span>
                                     <span className="text-[10px] text-gray-400 uppercase">Diseño Digital y Software a Medida</span>
                                 </div>
                             </div>
@@ -173,7 +173,7 @@ export function PublicFooter() {
                 {/* Bottom Bar Comp */}
                 <div className="pt-10 border-t border-gray-200 dark:border-gray-800 flex flex-col md:flex-row items-center justify-between gap-6">
                     <p className="text-xs text-gray-400 text-center md:text-left">
-                        © {currentYear} ViveresApp. Todos los derechos reservados.
+                        © {currentYear} {process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"}. Todos los derechos reservados.
                     </p>
                     <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50/50 dark:bg-indigo-950/30 rounded-full border border-indigo-100/50 dark:border-indigo-900/20">
                         <span className="text-[10px] font-bold text-indigo-600/70 dark:text-indigo-400/70 uppercase">Hecho con</span>

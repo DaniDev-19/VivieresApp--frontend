@@ -26,12 +26,21 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         min_stock_level: 5,
         image_url: "",
         is_public: true,
+        apply_iva_web: true,
         tax_rate: 0.16, // 16% por defecto
     });
 
     useEffect(() => {
         if (product) {
-            setFormData(product as Product);
+            setFormData({
+                ...formData, // Mantener valores por defecto para campos faltantes
+                ...product,
+                cost_price: Number(product.cost_price || 0),
+                profit_margin: Number(product.profit_margin || 0.30),
+                stock_quantity: Number(product.stock_quantity || 0),
+                min_stock_level: Number(product.min_stock_level || 0),
+                tax_rate: Number(product.tax_rate || 0.16),
+            } as Product);
         }
     }, [product]);
 
@@ -123,8 +132,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                                 step="0.01"
                                 min="0"
                                 required
-                                value={formData.cost_price}
-                                onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })}
+                                value={formData.cost_price || ""}
+                                onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) || 0 })}
                                 className="w-full rounded-lg border border-gray-200 bg-white p-2.5 pl-7 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
                             />
                         </div>
@@ -137,8 +146,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                             <input
                                 type="number"
                                 step="0.01"
-                                value={formData.profit_margin}
-                                onChange={(e) => setFormData({ ...formData, profit_margin: parseFloat(e.target.value) })}
+                                value={formData.profit_margin || 0}
+                                onChange={(e) => setFormData({ ...formData, profit_margin: parseFloat(e.target.value) || 0 })}
                                 className="w-full rounded-lg border border-gray-200 bg-white p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
                             />
                             <span className="text-xs text-gray-500">{(formData.profit_margin * 100).toFixed(0)}%</span>
@@ -152,8 +161,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                                 step="0.01"
                                 min="0"
                                 max="1"
-                                value={formData.tax_rate}
-                                onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) })}
+                                value={formData.tax_rate || 0}
+                                onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) || 0 })}
                                 className="w-full rounded-lg border border-gray-200 bg-white p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
                             />
                             <span className="text-xs text-gray-500">{(formData.tax_rate * 100).toFixed(0)}%</span>
@@ -229,8 +238,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                             <input
                                 type="number"
                                 min="0"
-                                value={formData.stock_quantity}
-                                onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) })}
+                                value={formData.stock_quantity ?? 0}
+                                onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) || 0 })}
                                 className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
                             />
                         </div>
@@ -241,8 +250,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                             <input
                                 type="number"
                                 min="0"
-                                value={formData.min_stock_level}
-                                onChange={(e) => setFormData({ ...formData, min_stock_level: parseInt(e.target.value) })}
+                                value={formData.min_stock_level ?? 0}
+                                onChange={(e) => setFormData({ ...formData, min_stock_level: parseInt(e.target.value) || 0 })}
                                 className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
                             />
                         </div>
@@ -258,6 +267,19 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                         />
                         <label htmlFor="is_public" className="text-sm font-medium text-gray-900 dark:text-white">
                             Visible en Catálogo Público
+                        </label>
+                    </div>
+
+                    <div className="flex items-center gap-3 rounded-lg border p-4 dark:border-gray-700">
+                        <input
+                            type="checkbox"
+                            id="apply_iva_web"
+                            checked={formData.apply_iva_web}
+                            onChange={(e) => setFormData({ ...formData, apply_iva_web: e.target.checked })}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                        <label htmlFor="apply_iva_web" className="text-sm font-medium text-gray-900 dark:text-white">
+                            Aplicar IVA en Pedidos Web
                         </label>
                     </div>
 

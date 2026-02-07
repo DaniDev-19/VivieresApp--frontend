@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import api from "@/lib/api";
+import { formatCurrency, formatWhatsAppLink } from "@/lib/utils";
 import { Plus, CheckCircle, Clock, Trash2, FileText } from "lucide-react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
@@ -396,7 +397,8 @@ export function OrdersList() {
         // --- Header ---
         doc.setFontSize(22);
         doc.setFont("helvetica", "bold");
-        doc.text("VÍVERES APP", pageWidth / 2, 20, { align: "center" });
+        const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || "VIVERES APP";
+        doc.text(businessName.toUpperCase(), pageWidth / 2, 20, { align: "center" });
 
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
@@ -434,7 +436,7 @@ export function OrdersList() {
         doc.setTextColor(100);
         doc.text(`ID: ${order.provider_id || "N/A"}`, rightColX, 63);
         if (order.provider?.contact_info) {
-            doc.text(`Contacto: ${order.provider.contact_info.substring(0, 40)}`, rightColX, 68);
+            doc.text(`Contacto: ${order.provider.contact_info}`, rightColX, 68, { maxWidth: 80 });
         }
         doc.setTextColor(0);
 
@@ -482,7 +484,7 @@ export function OrdersList() {
         y += 10;
 
         doc.setFontSize(8);
-        doc.text("Esta orden de compra es un documento digital generado por el sistema ViveresApp.", 14, y);
+        doc.text(`Esta orden de compra es un documento digital generado por el sistema ${process.env.NEXT_PUBLIC_BUSINESS_NAME || 'ViveresApp'}.`, 14, y);
         y += 5;
         doc.text("Por favor verificar disponibilidad y precios antes de despachar.", 14, y);
 
@@ -494,10 +496,9 @@ export function OrdersList() {
         toast.success("PDF Profesional Descargado. Abriendo WhatsApp...");
 
         // 3. Open WhatsApp
-        const phone = order.provider?.contact_info?.replace(/\D/g, '') || "";
+        const phone = order.provider?.contact_info || "";
         const message = `Hola ${order.provider?.name || ""}, adjunto la orden de compra #${order.id}.`;
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
+        window.open(formatWhatsAppLink(phone, message), '_blank');
     }
 
     const proceedWithAction = () => {

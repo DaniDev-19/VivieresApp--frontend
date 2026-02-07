@@ -12,6 +12,7 @@ export interface Product {
     category_id?: number;
     image_url: string;
     is_public: boolean;
+    apply_iva_web?: boolean;
     created_at?: string;
     updated_at?: string;
 }
@@ -77,5 +78,7 @@ export interface WebOrder {
     payment_method: string;
     transaction_ref?: string;
     payment_proof_url?: string;
+    delivery_type?: string;
+    delivery_cost?: number;
     items: WebOrderItem[];
 }

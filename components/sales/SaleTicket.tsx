@@ -25,6 +25,8 @@ interface SaleTicketProps {
 }
 
 export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
+    const effectiveRate = sale.payments?.find(p => p.currency === 'VES')?.exchange_rate || rates?.BCV || 0;
+
     const handleDownloadPDF = () => {
         const doc = new jsPDF({
             orientation: "portrait",
@@ -83,14 +85,15 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
         // --- CONTENIDO DEL PDF ---
 
         // 1. Header
-        centerText("VIVERES APP", y, 14, true); y += 6;
-        centerText("\"Calidad y servicio a tu puerta\"", y, 8); y += 5;
+        const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || "VIVERES APP";
+        centerText(businessName.toUpperCase(), y, 14, true); y += 6;
+        centerText(process.env.NEXT_PUBLIC_BUSINESS_DESCRIPTION || "\"Calidad y servicio a tu puerta\"", y, 8); y += 5;
 
         (doc as any).setLineDash([1, 1], 0);
         doc.line(4, y, 76, y); y += 4; // Separador
 
-        centerText("RIF: J-12345678-9", y, 9, true); y += 4;
-        centerText("REF: 0412-1234567", y, 9, true); y += 5;
+        centerText(`RIF: ${process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"}`, y, 9, true); y += 4;
+        centerText(`REF: ${process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}`, y, 9, true); y += 5;
         doc.line(4, y, 76, y); y += 5;
 
         // 2. Info Venta
@@ -116,7 +119,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
 
         sale.items.forEach((item) => {
             const itemTotal = item.quantity * item.unit_price_usd;
-            const itemTotalBs = itemTotal * (rates?.BCV || 0);
+            const itemTotalBs = itemTotal * effectiveRate;
 
             doc.setFont("courier", "normal");
             doc.setFontSize(9);
@@ -151,21 +154,21 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
 
         // 4. Totales
         const subtotal = sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0);
-        const subtotalBs = subtotal * (rates?.BCV || 0);
+        const subtotalBs = subtotal * effectiveRate;
 
         rowText("SUBTOTAL:", `$${subtotal.toFixed(2)}`, y, 9, true); y += 3;
         const subBsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(subtotalBs)}`;
         rightText(subBsStr, y, 7); y += 4;
 
         if (sale.total_tax_usd && sale.total_tax_usd > 0) {
-            rowText("IVA (16%):", `$${sale.total_tax_usd.toFixed(2)}`, y, 9, true); y += 3;
-            const taxBsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_tax_usd * (rates?.BCV || 0))}`;
+            rowText("IVA:", `$${sale.total_tax_usd.toFixed(2)}`, y, 9, true); y += 3;
+            const taxBsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_tax_usd * effectiveRate)}`;
             rightText(taxBsStr, y, 7); y += 4;
         }
 
         if (sale.delivery_amount_usd && sale.delivery_amount_usd > 0) {
             rowText("DELIVERY:", `$${sale.delivery_amount_usd.toFixed(2)}`, y, 9, true); y += 3;
-            const delBsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.delivery_amount_usd * (rates?.BCV || 0))}`;
+            const delBsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.delivery_amount_usd * effectiveRate)}`;
             rightText(delBsStr, y, 7); y += 4;
         }
 
@@ -173,7 +176,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
         doc.setFontSize(12);
         rowText("TOTAL:", `$${sale.total_amount_usd.toFixed(2)}`, y, 11, true); y += 5;
 
-        const totalBsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_amount_usd * (rates?.BCV || 0))}`;
+        const totalBsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_amount_usd * effectiveRate)}`;
         rightText(totalBsStr, y, 9, true); y += 6;
 
         // 5. Pagos
@@ -186,9 +189,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
             rowText(p.method.replace('_', ' '), amountStr, y, 8); y += 4;
         });
 
-        // 6. Tasa
         y += 2;
-        rightText(`Tasa: ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(rates?.BCV || 0)} Bs/$`, y, 7, false); y += 5;
 
         // 7. Códigos (Captura robusta)
         try {
@@ -217,7 +218,9 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
         // 8. Footer final
         y += 2;
         centerText("¡GRACIAS POR SU COMPRA!", y, 9, true); y += 5;
-        centerText("No se aceptan devoluciones despues de 24h", y, 7);
+        centerText("No se aceptan devoluciones despues de 24h", y, 7); y += 5;
+        doc.setFont("courier", "italic");
+        centerText("Powered by ViveresApp", y, 6);
 
         // Guardar
         doc.save(`Ticket_Venta_${sale.id}.pdf`);
@@ -246,10 +249,10 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                 {/* VISTA PREVIA EN PANTALLA (HTML) */}
                 <div className="ticket-body flex flex-col items-center text-center font-mono text-[11px] text-black leading-tight">
                     <div className="mb-2 w-full">
-                        <h2 className="text-xl font-bold uppercase tracking-widest mb-1">Víveres App</h2>
-                        <p className="text-[10px] text-gray-500 italic mb-2">"Calidad y servicio a tu puerta"</p>
+                        <h2 className="text-xl font-bold uppercase tracking-widest mb-1">{process.env.NEXT_PUBLIC_BUSINESS_NAME || "Víveres App"}</h2>
+                        <p className="text-[10px] text-gray-500 italic mb-2">{process.env.NEXT_PUBLIC_BUSINESS_DESCRIPTION || "\"Calidad y servicio a tu puerta\""}</p>
                         <div className="border-y border-dashed border-gray-400 py-1 uppercase font-bold text-[9px]">
-                            RIF: J-12345678-9 <br /> REF: 0412-1234567
+                            RIF: {process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"} <br /> REF: {process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}
                         </div>
                     </div>
 
@@ -276,7 +279,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                         </div>
                         {sale.items.map((item, idx) => {
                             const itemTotal = item.quantity * item.unit_price_usd;
-                            const itemTotalBs = itemTotal * (rates?.BCV || 0);
+                            const itemTotalBs = itemTotal * effectiveRate;
                             return (
                                 <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
                                     <div className="flex w-full justify-between">
@@ -297,16 +300,16 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                             <span className="font-bold text-gray-600">SUBTOTAL:</span>
                             <div className="text-right">
                                 <span className="block font-bold">${(sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)).toFixed(2)}</span>
-                                <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)) * (rates?.BCV || 0))}</span>
+                                <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)) * effectiveRate)}</span>
                             </div>
                         </div>
 
                         {(sale.total_tax_usd && sale.total_tax_usd > 0) ? (
                             <div className="flex justify-between text-[10px]">
-                                <span className="font-bold text-gray-600">IVA (16%):</span>
+                                <span className="font-bold text-gray-600">IVA:</span>
                                 <div className="text-right">
                                     <span className="block font-bold">${(sale.total_tax_usd).toFixed(2)}</span>
-                                    <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_tax_usd) * (rates?.BCV || 0))}</span>
+                                    <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_tax_usd) * effectiveRate)}</span>
                                 </div>
                             </div>
                         ) : null}
@@ -316,7 +319,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                                 <span className="font-bold text-gray-600">DELIVERY:</span>
                                 <div className="text-right">
                                     <span className="block font-bold">${sale.delivery_amount_usd.toFixed(2)}</span>
-                                    <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.delivery_amount_usd * (rates?.BCV || 0))}</span>
+                                    <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.delivery_amount_usd * effectiveRate)}</span>
                                 </div>
                             </div>
                         ) : null}
@@ -326,13 +329,11 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                         <span className="text-[12px] font-black uppercase">TOTAL:</span>
                         <div className="text-right">
                             <span className="block text-[14px] font-black text-black">${sale.total_amount_usd.toFixed(2)}</span>
-                            <span className="block text-[10px] font-bold text-gray-700">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_amount_usd * (rates?.BCV || 0))}</span>
+                            <span className="block text-[10px] font-bold text-gray-700">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_amount_usd * effectiveRate)}</span>
                         </div>
                     </div>
 
-                    <div className="w-full text-right mt-1 mb-2">
-                        <span className="text-[8px] text-gray-400">Rate: {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(rates?.BCV || 0)} Bs/$</span>
-                    </div>
+                    {/* Rate ocultada por solicitud del usuario */}
 
                     <div className="w-full mt-1">
                         <div className="text-[9px] font-bold mb-1 text-left uppercase border-b border-gray-200">Métodos de Pago</div>
@@ -374,6 +375,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                                 level="M"
                             />
                             <p className="text-[8px] text-gray-400 mt-1">Escanea para verificar</p>
+                            <p className="text-[7px] text-gray-300 mt-2 font-bold uppercase tracking-widest">Powered by ViveresApp</p>
                         </div>
                     </div>
 

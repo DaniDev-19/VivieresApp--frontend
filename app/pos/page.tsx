@@ -58,37 +58,40 @@ export default function POSPage() {
         queryFn: async () => {
             const { data } = await api.get("/rates/");
 
-            const ratesObj: any = {};
-            data.forEach((r: any) => { ratesObj[r.currency] = r.rate; });
+            const ratesObj: any = { BCV: 0, USDT: 0, COP: 0 };
+            // Procesar de más antiguo a más nuevo para que el más nuevo prevalezca,
+            // o simplemente verificar si ya existe. Dado que vienen ordenados DESC:
+            data.reverse().forEach((r: any) => { ratesObj[r.currency] = r.rate; });
             setRates(ratesObj);
             setLastUpdated(new Date());
-            // Toast removed from here to avoid alerts on auto-refetch
+
             return ratesObj;
         },
         enabled: true,
-        refetchOnWindowFocus: false // Disabling auto-refetch on window focus to prevent unexpected updates
+        refetchOnWindowFocus: false
     });
 
-    // ... (code continues) ...
+    const refreshRatesMutation = useMutation({
+        mutationFn: async () => {
+            const { data } = await api.post("/rates/refresh");
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["latest-rates"] });
+            toast.success("Tasas actualizadas exitosamente desde el servidor");
+        },
+        onError: (err: any) => {
+            toast.error("Error al actualizar las tasas", {
+                description: err.response?.data?.detail || "No se pudo conectar con el servidor"
+            });
+        }
+    });
 
-    <button
-        onClick={() => {
-            refreshRates().then(() => toast.success("Tasas actualizadas correctamente"));
-        }}
-        disabled={isRefreshingRates}
-        className={`rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-colors ${isRefreshingRates ? 'opacity-75 cursor-not-allowed' : ''}`}
-        title="Actualizar tasas"
-    >
-        <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isRefreshingRates ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            {isRefreshingRates ? (
-                <>
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </>
-            ) : (
-                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-            )}
-        </svg>
-    </button>
+    const isAnyRefreshing = isRefreshingRates || refreshRatesMutation.isPending;
+
+
+
+
 
 
     useEffect(() => {
@@ -132,6 +135,7 @@ export default function POSPage() {
         onSuccess: (response) => {
             clearCart();
             setCompletedSale(response.data);
+            queryClient.invalidateQueries({ queryKey: ["products"] });
             toast.success("¡Venta procesada con éxito!", {
                 description: "La transacción ha sido registrada en el sistema.",
                 duration: 4000,
@@ -294,21 +298,14 @@ export default function POSPage() {
                         )}
 
                         <button
-                            onClick={async () => {
-                                await refreshRates();
-                                toast.success("Tasas actualizadas correctamente", {
-                                    description: `Datos sincronizados a las ${new Date().toLocaleTimeString()}`
-                                });
-                            }}
-                            disabled={isRefreshingRates}
-                            className={`rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-colors ${isRefreshingRates ? 'opacity-75 cursor-not-allowed' : ''}`}
+                            onClick={() => refreshRatesMutation.mutate()}
+                            disabled={isAnyRefreshing}
+                            className={`rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-colors ${isAnyRefreshing ? 'opacity-75 cursor-not-allowed' : ''}`}
                             title="Actualizar tasas"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isRefreshingRates ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                {isRefreshingRates ? (
-                                    <>
-                                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                                    </>
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isAnyRefreshing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                {isAnyRefreshing ? (
+                                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                                 ) : (
                                     <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
                                 )}
@@ -505,90 +502,94 @@ export default function POSPage() {
                 </div>
             </div>
 
-            {/* Sale Ticket Modal */}
-            {completedSale && (
-                <SaleTicket
-                    sale={completedSale}
-                    rates={rates}
-                    onClose={() => setCompletedSale(null)}
-                />
-            )}
 
-            {/* Quick Customer Registration Modal */}
-            {showCustomerModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowCustomerModal(false)}>
-                    <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                            <UserPlus className="h-5 w-5 text-indigo-600" />
-                            Registro Rápido de Cliente
-                        </h3>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            try {
-                                const { data } = await api.post("/customers", customerForm);
-                                queryClient.invalidateQueries({ queryKey: ["customers"] });
-                                setSelectedCustomer(data);
-                                setShowCustomerModal(false);
-                                setCustomerForm({ cedula: "", name: "", phone: "" });
-                                toast.success("Cliente registrado exitosamente");
-                            } catch (err: any) {
-                                toast.error("Error al registrar cliente", {
-                                    description: err.response?.data?.detail || "Error desconocido"
-                                });
-                            }
-                        }} className="space-y-3">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Cédula *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={customerForm.cedula}
-                                    onChange={(e) => setCustomerForm({ ...customerForm, cedula: e.target.value })}
-                                    className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Nombre *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={customerForm.name}
-                                    onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
-                                    className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Teléfono *</label>
-                                <input
-                                    type="tel"
-                                    required
-                                    value={customerForm.phone}
-                                    onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                                    className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                />
-                            </div>
-                            <div className="flex gap-2 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowCustomerModal(false);
-                                        setCustomerForm({ cedula: "", name: "", phone: "" });
-                                    }}
-                                    className="flex-1 rounded-xl bg-gray-100 py-2 font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 rounded-xl bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700"
-                                >
-                                    Registrar
-                                </button>
-                            </div>
-                        </form>
+            {
+                completedSale && (
+                    <SaleTicket
+                        sale={completedSale}
+                        rates={rates}
+                        onClose={() => setCompletedSale(null)}
+                    />
+                )
+            }
+
+
+            {
+                showCustomerModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowCustomerModal(false)}>
+                        <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <UserPlus className="h-5 w-5 text-indigo-600" />
+                                Registro Rápido de Cliente
+                            </h3>
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                try {
+                                    const { data } = await api.post("/customers", customerForm);
+                                    queryClient.invalidateQueries({ queryKey: ["customers"] });
+                                    setSelectedCustomer(data);
+                                    setShowCustomerModal(false);
+                                    setCustomerForm({ cedula: "", name: "", phone: "" });
+                                    toast.success("Cliente registrado exitosamente");
+                                } catch (err: any) {
+                                    toast.error("Error al registrar cliente", {
+                                        description: err.response?.data?.detail || "Error desconocido"
+                                    });
+                                }
+                            }} className="space-y-3">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Cédula *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={customerForm.cedula}
+                                        onChange={(e) => setCustomerForm({ ...customerForm, cedula: e.target.value })}
+                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Nombre *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={customerForm.name}
+                                        onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
+                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Teléfono *</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={customerForm.phone}
+                                        onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+                                <div className="flex gap-2 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowCustomerModal(false);
+                                            setCustomerForm({ cedula: "", name: "", phone: "" });
+                                        }}
+                                        className="flex-1 rounded-xl bg-gray-100 py-2 font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 rounded-xl bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700"
+                                    >
+                                        Registrar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div>
     );
 }

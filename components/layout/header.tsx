@@ -39,20 +39,11 @@ export function Header() {
                 </button>
 
                 <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate max-w-[150px] sm:max-w-none">
-                    {user?.username ? `Hola, ${user.username}` : 'ViveresApp'}
+                    {user?.username ? `Hola, ${user.username}` : (process.env.NEXT_PUBLIC_BUSINESS_NAME || 'ViveresApp')}
                 </h1>
             </div>
 
             <div className="flex items-center gap-4">
-                <div className="relative hidden sm:block">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                    <input
-                        type="search"
-                        placeholder="Buscar..."
-                        className="h-9 w-64 rounded-xl border border-gray-200 bg-gray-50 pl-9 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200"
-                    />
-                </div>
-
                 <NotificationDropdown />
 
                 <ThemeToggle />

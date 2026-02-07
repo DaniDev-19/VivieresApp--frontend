@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Calculator, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw, Calculator, X } from "lucide-react";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
@@ -15,11 +15,22 @@ export function CurrencyCalculator() {
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
 
+    const queryClient = useQueryClient();
+
     // Fetch Rates
-    const { data: rates } = useQuery({
+    const { data: rates, isFetching: isFetchingRates } = useQuery({
         queryKey: ["rates"],
         queryFn: async () => (await api.get("/rates/")).data
     });
+
+    const refreshMutation = useMutation({
+        mutationFn: async () => {
+            await api.post("/rates/refresh");
+            return queryClient.invalidateQueries({ queryKey: ["rates"] });
+        }
+    });
+
+    const isRefreshing = refreshMutation.isPending || isFetchingRates;
 
     const bcvRate = rates?.find((r: { currency: string; rate: number }) => r.currency === "BCV")?.rate || 0;
     const usdtRate = rates?.find((r: { currency: string; rate: number }) => r.currency === "USDT")?.rate || 0;
@@ -69,7 +80,17 @@ export function CurrencyCalculator() {
                         className="fixed bottom-40 right-4 z-50 w-72 rounded-2xl bg-white p-4 shadow-2xl ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800"
                     >
                         <div className="mb-4 flex items-center justify-between">
-                            <h3 className="font-bold text-gray-900 dark:text-white">Conversor</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-gray-900 dark:text-white">Conversor</h3>
+                                <button
+                                    onClick={() => refreshMutation.mutate()}
+                                    disabled={isRefreshing}
+                                    className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isRefreshing ? 'animate-spin opacity-50' : ''}`}
+                                    title="Refrescar tasas"
+                                >
+                                    <RefreshCw className="h-3 w-3 text-indigo-600" />
+                                </button>
+                            </div>
                             <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
                                 <X className="h-4 w-4" />
                             </button>

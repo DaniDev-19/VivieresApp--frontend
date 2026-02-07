@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { formatWhatsAppLink } from "@/lib/utils";
 import {
     Users,
     Search,
@@ -124,16 +125,7 @@ export default function CustomersPage() {
 
     const handleWhatsApp = (phone: string) => {
         if (!phone) return;
-
-        // Eliminar caracteres no numéricos
-        let cleanPhone = phone.replace(/\D/g, '');
-
-        // Lógica simple para Venezuela: si empieza por 04xx o 02xx, reemplazar 0 por 58
-        if (cleanPhone.startsWith('0')) {
-            cleanPhone = '58' + cleanPhone.substring(1);
-        }
-
-        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+        window.open(formatWhatsAppLink(phone, "Hola, te contacto desde Viveres App."), '_blank');
     };
 
     const handleCreate = () => {

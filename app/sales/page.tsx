@@ -9,11 +9,13 @@ import {
     Calendar,
     DollarSign,
     Package,
-    Eye
+    Eye,
+    FileText
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 import { SaleTicket } from "@/components/sales/SaleTicket";
+import { SaleInvoice } from "@/components/sales/SaleInvoice";
 import { Pagination } from "@/components/ui/pagination";
 
 interface Sale {
@@ -36,6 +38,7 @@ export default function SalesPage() {
     const [page, setPage] = useState(1);
     const limit = 10;
     const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+    const [selectedInvoice, setSelectedInvoice] = useState<Sale | null>(null);
     const [rates, setRates] = useState<any>({ BCV: 0, USDT: 0, COP: 0 });
 
     // Fetch Rates on load (needed for ticket conversions)
@@ -43,8 +46,8 @@ export default function SalesPage() {
         queryKey: ["latest-rates-sales"],
         queryFn: async () => {
             const { data } = await api.get("/rates/");
-            const ratesObj: any = {};
-            data.forEach((r: any) => { ratesObj[r.currency] = r.rate; });
+            const ratesObj: any = { BCV: 0, USDT: 0, COP: 0 };
+            data.reverse().forEach((r: any) => { ratesObj[r.currency] = r.rate; });
             setRates(ratesObj);
             return ratesObj;
         },
@@ -66,32 +69,53 @@ export default function SalesPage() {
         placeholderData: (previousData) => previousData,
     });
 
+    // Fetch Sales Stats (Day, Week, Month, Year)
+    const { data: stats } = useQuery({
+        queryKey: ["sales-stats"],
+        queryFn: async () => {
+            const { data } = await api.get("/sales/stats");
+            return data;
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value);
         setPage(1);
     };
 
-    const totalSales = sales?.reduce((sum, sale) => sum + sale.total_amount_usd, 0) || 0;
+    const statCards = [
+        { label: "Hoy", value: stats?.today || 0, color: "from-blue-600 to-indigo-600" },
+        { label: "Semana", value: stats?.week || 0, color: "from-indigo-600 to-purple-600" },
+        { label: "Mes", value: stats?.month || 0, color: "from-purple-600 to-pink-600" },
+        { label: "Año", value: stats?.year || 0, color: "from-orange-500 to-red-600" },
+    ];
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Receipt className="h-6 w-6 text-indigo-600" />
-                        Historial de Ventas
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400">
-                        Resumen y detalle de todas las transacciones
-                    </p>
-                </div>
-                <div className="flex items-center gap-4 rounded-xl bg-linear-to-r from-indigo-600 to-purple-600 px-6 py-4 text-white shadow-lg">
-                    <DollarSign className="h-8 w-8" />
-                    <div>
-                        <p className="text-xs opacity-90">Total Vendido</p>
-                        <p className="text-2xl font-bold">{formatCurrency(totalSales)}</p>
+            <div className="flex flex-col gap-2">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Receipt className="h-6 w-6 text-indigo-600" />
+                    Historial de Ventas
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400">
+                    Resumen y detalle de todas las transacciones
+                </p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {statCards.map((stat, idx) => (
+                    <div key={idx} className={`flex items-center gap-4 rounded-xl bg-linear-to-r ${stat.color} px-6 py-4 text-white shadow-lg transition-transform hover:scale-105`}>
+                        <div className="rounded-lg bg-white/20 p-2">
+                            <DollarSign className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium opacity-90">{stat.label}</p>
+                            <p className="text-xl font-bold">{formatCurrency(stat.value)}</p>
+                        </div>
                     </div>
-                </div>
+                ))}
             </div>
 
             {/* Filters */}
@@ -159,13 +183,22 @@ export default function SalesPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => setSelectedSale(sale)}
-                                                className="rounded-lg p-2 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-900/20"
-                                                title="Ver Ticket"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => setSelectedSale(sale)}
+                                                    className="rounded-lg p-2 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-900/20"
+                                                    title="Ver Ticket"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setSelectedInvoice(sale)}
+                                                    className="rounded-lg p-2 text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-900/40"
+                                                    title="Factura Formal (Carta)"
+                                                >
+                                                    <FileText className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -190,6 +223,15 @@ export default function SalesPage() {
                     sale={selectedSale}
                     rates={rates}
                     onClose={() => setSelectedSale(null)}
+                />
+            )}
+
+            {/* Sale Invoice Modal (Formal/Carta) */}
+            {selectedInvoice && (
+                <SaleInvoice
+                    sale={selectedInvoice}
+                    rates={rates}
+                    onClose={() => setSelectedInvoice(null)}
                 />
             )}
         </div>

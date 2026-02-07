@@ -11,8 +11,8 @@ Desarrollado y Diseñado por: **DaniDev - Software Engineer**
 La interfaz se ha construido utilizando las tecnologías más vanguardistas para garantizar una experiencia de usuario fluida y reactiva (SPA-like feel).
 
 - **Framework:** [Next.js 16](https://nextjs.org/) (App Router & React Server Components)
-- **Lenguaje:** TypeScript (Tipado fuerte para robustez)
-- **Estilos:** [Tailwind CSS 4](https://tailwindcss.com/) (Sistema de diseño moderno)
+- **Lenguaje:** TypeScript (Tipado fuerte para robustez industrial)
+- **Estilos:** [Tailwind CSS 4](https://tailwindcss.com/) (Sistema de diseño nativo basado en variables)
 - **Estado Global:** [Zustand](https://github.com/pmndrs/zustand) (Ligero y escalable)
 - **Fetching de Datos:** [React Query (TanStack)](https://tanstack.com/query) (Caché y sincronización de servidor)
 - **Animaciones:** Framer Motion (Micro-interacciones premium)

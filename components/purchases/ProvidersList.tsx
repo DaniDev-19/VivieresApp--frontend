@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import api from "@/lib/api";
+import { formatWhatsAppLink } from "@/lib/utils";
 import { Plus, Trash2, Edit, Truck, Phone, MessageCircle } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Provider } from "@/types";
@@ -116,12 +117,12 @@ export function ProvidersList() {
     };
 
     const handleWhatsApp = (prov: Provider) => {
-        const phone = prov.contact_info?.replace(/\D/g, '') || "";
+        const phone = prov.contact_info || "";
         if (!phone) {
-            alert("No se encontró número de teléfono válido para este proveedor.");
+            toast.error("No se encontró contacto registrado.");
             return;
         }
-        window.open(`https://wa.me/${phone}`, '_blank');
+        window.open(formatWhatsAppLink(phone, "Hola, te contacto desde Viveres App."), '_blank');
     };
 
     return (

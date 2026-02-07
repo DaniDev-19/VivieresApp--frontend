@@ -8,6 +8,8 @@ export interface CartItem {
     price: number;
     quantity: number;
     image_url?: string;
+    tax_rate?: number;
+    apply_iva_web?: boolean;
 }
 
 interface PublicStore {
@@ -37,7 +39,9 @@ export const usePublicStore = create<PublicStore>()(
                         name: product.name,
                         price: product.price_usd,
                         quantity: 1,
-                        image_url: product.image_url
+                        image_url: product.image_url,
+                        tax_rate: product.tax_rate,
+                        apply_iva_web: product.apply_iva_web
                     }]
                 };
             }),

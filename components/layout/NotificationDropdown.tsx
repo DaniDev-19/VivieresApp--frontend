@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
 
 const iconMap: Record<string, any> = {
     info: Info,
@@ -131,9 +132,11 @@ export function NotificationDropdown() {
                 </ScrollArea>
                 <DropdownMenuSeparator />
                 <div className="p-2 bg-gray-50/50 dark:bg-gray-900/50">
-                    <Button variant="ghost" className="w-full text-xs text-gray-500 hover:text-gray-700">
-                        Ver todas las notificaciones
-                    </Button>
+                    <Link href="/notifications" className="w-full">
+                        <Button variant="ghost" className="w-full text-xs text-gray-500 hover:text-gray-700">
+                            Ver todas las notificaciones
+                        </Button>
+                    </Link>
                 </div>
             </DropdownMenuContent>
         </DropdownMenu>

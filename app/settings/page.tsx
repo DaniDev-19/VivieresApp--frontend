@@ -13,7 +13,7 @@ export default function SettingsPage() {
             const origin = typeof window !== 'undefined' ? window.location.origin : "http://localhost:3000";
             const catalogUrl = `${origin}/`;
 
-            const res = await api.get(`/reports/qr-pdf?url=${encodeURIComponent(catalogUrl)}&name=ViveresApp&phone=04141234567`, {
+            const res = await api.get(`/reports/qr-pdf?url=${encodeURIComponent(catalogUrl)}`, {
                 responseType: 'blob'
             });
 
