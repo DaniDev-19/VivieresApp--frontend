@@ -134,6 +134,7 @@ export function ContactSection() {
                     {/* Map Integration */}
                     <div className="w-full lg:w-1/2">
                         <div className="relative aspect-square md:aspect-video lg:aspect-auto lg:h-full min-h-[350px] md:min-h-[400px] lg:min-h-[500px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white dark:border-gray-800 ring-1 ring-gray-100 dark:ring-gray-800">
+                            {/* mapa */}
                             <iframe
                                 src="https://www.google.com/maps/embed?pb=!1m13!1m8!1m3!1d3922.0117771239097!2d-71.6229949!3d10.5782509!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTDCsDM0JzQxLjciTiA3McKwMzcnMjIuOCJX!5e0!3m2!1ses!2sve!4v1766962895880!5m2!1ses!2sve"
                                 width="100%"
