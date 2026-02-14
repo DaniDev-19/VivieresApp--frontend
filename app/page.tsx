@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import api from "@/lib/api";
 import { Search, ShoppingCart, Star } from "lucide-react";
@@ -22,14 +22,34 @@ export default function RootPage() {
     const addToCart = usePublicStore(state => state.addToCart);
     const totalItems = usePublicStore(state => state.totalItems());
 
-    // Fetch Products
-    const { data: products, isLoading } = useQuery({
-        queryKey: ["public-products"],
-        queryFn: async () => {
-            const res = await api.get("/products/");
-            return (res.data as Product[]).filter(p => p.is_public);
+    const limit = 15;
+
+    // Fetch Products with Pagination
+    const {
+        data: infiniteData,
+        isLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = useInfiniteQuery({
+        queryKey: ["public-products", search],
+        queryFn: async ({ pageParam = 0 }) => {
+            const res = await api.get("/products/public", {
+                params: {
+                    skip: pageParam,
+                    limit: limit,
+                    search: search || undefined
+                }
+            });
+            return res.data as Product[];
+        },
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => {
+            return lastPage.length === limit ? allPages.length * limit : undefined;
         }
     });
+
+    const products = infiniteData?.pages.flat() || [];
 
     // Fetch Rates
     const { data: rates } = useQuery({
@@ -38,10 +58,9 @@ export default function RootPage() {
     });
     const bcvRate = (rates as Rate[])?.find(r => r.currency === "BCV")?.rate || 0;
 
-    const filteredProducts = products?.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.barcode.toLowerCase().includes(search.toLowerCase())
-    );
+    // Ya que usamos el filtrado del backend, no necesitamos filtrar de nuevo aquí
+    // pero mantenemos la referencia para el resto del código
+    const filteredProducts = products;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans">
@@ -93,43 +112,76 @@ export default function RootPage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                        {filteredProducts?.map((product) => (
-                            <motion.div
-                                layout
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                key={product.id}
-                                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-xl transition-all duration-300"
-                            >
-                                <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
-                                    {product.image_url ? (
-                                        <img src={getImageUrl(product.image_url)!} alt={product.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" />
-                                    ) : (
-                                        <ShoppingCart className="w-12 h-12 text-gray-200" />
-                                    )}
-                                </div>
-                                <div className="p-4">
-                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{product.name}</h3>
-                                    <div className="flex items-center justify-between mt-2">
-                                        <div className="flex flex-col">
-                                            <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                                                {formatCurrency(product.price_usd ?? 0)}
-                                            </span>
-                                            <span className="text-[10px] text-gray-400">
-                                                Bs. {((product.price_usd ?? 0) * (bcvRate ?? 0)).toFixed(2)}
-                                            </span>
-                                        </div>
-                                        <button
-                                            onClick={() => addToCart(product)}
-                                            className="bg-gray-900 text-white p-2 rounded-xl hover:bg-indigo-600 transition-colors dark:bg-white dark:text-black shadow-lg"
-                                        >
-                                            <ShoppingCart className="w-4 h-4" />
-                                        </button>
+                    <div className="space-y-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                            {filteredProducts?.map((product) => (
+                                <motion.div
+                                    layout
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    key={product.id}
+                                    className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-xl transition-all duration-300"
+                                >
+                                    <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+                                        {product.image_url ? (
+                                            <img src={getImageUrl(product.image_url)!} alt={product.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" />
+                                        ) : (
+                                            <ShoppingCart className="w-12 h-12 text-gray-200" />
+                                        )}
                                     </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                    <div className="p-4">
+                                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{product.name}</h3>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                                                    {formatCurrency(product.price_usd ?? 0)}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400">
+                                                    Bs. {((product.price_usd ?? 0) * (bcvRate ?? 0)).toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => addToCart(product)}
+                                                className="bg-gray-900 text-white p-2 rounded-xl hover:bg-indigo-600 transition-colors dark:bg-white dark:text-black shadow-lg"
+                                            >
+                                                <ShoppingCart className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        {hasNextPage && (
+                            <div className="flex justify-center pt-4">
+                                <button
+                                    onClick={() => fetchNextPage()}
+                                    disabled={isFetchingNextPage}
+                                    className="px-8 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isFetchingNextPage ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                            Cargando...
+                                        </>
+                                    ) : (
+                                        "Cargar más productos"
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {!hasNextPage && filteredProducts && filteredProducts.length > 0 && (
+                            <p className="text-center text-gray-400 text-sm">
+                                Has llegado al final del catálogo
+                            </p>
+                        )}
+
+                        {filteredProducts && filteredProducts.length === 0 && !isLoading && (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500">No se encontraron productos que coincidan con tu búsqueda.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>

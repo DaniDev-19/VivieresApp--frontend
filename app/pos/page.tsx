@@ -23,9 +23,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { SaleTicket } from "@/components/sales/SaleTicket";
 
+const PRODUCTS_PER_PAGE = 20;
+
 export default function POSPage() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(0);
+    const [allProducts, setAllProducts] = useState<any[]>([]);
+    const [hasMore, setHasMore] = useState(true);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const {
@@ -99,26 +104,60 @@ export default function POSPage() {
     }, []);
 
 
-    const { data: products, isLoading } = useQuery({
-        queryKey: ["products", search],
+    const { data: products, isLoading, isFetching } = useQuery({
+        queryKey: ["products", search, page],
         queryFn: async () => {
+            const skip = page * PRODUCTS_PER_PAGE;
 
             if (search.length < 2) {
                 const res = await api.get("/products/", {
-                    params: { limit: 20 }
+                    params: { skip, limit: PRODUCTS_PER_PAGE }
                 });
-                return res.data.filter((p: any) => p.stock_quantity > 0);
+                const filtered = res.data.filter((p: any) => p.stock_quantity > 0);
+
+                // Update accumulated products
+                if (page === 0) {
+                    setAllProducts(filtered);
+                } else {
+                    setAllProducts(prev => [...prev, ...filtered]);
+                }
+
+                // Check if there are more products
+                setHasMore(filtered.length === PRODUCTS_PER_PAGE);
+
+                return filtered;
             }
 
             const isBarcode = /^\d+$/.test(search) && search.length > 5;
             const res = await api.get("/products/", {
-                params: isBarcode ? { barcode: search } : { search }
+                params: isBarcode
+                    ? { barcode: search, skip, limit: PRODUCTS_PER_PAGE }
+                    : { search, skip, limit: PRODUCTS_PER_PAGE }
             });
-            return res.data.filter((p: any) => p.stock_quantity > 0);
+            const filtered = res.data.filter((p: any) => p.stock_quantity > 0);
+
+            // Update accumulated products
+            if (page === 0) {
+                setAllProducts(filtered);
+            } else {
+                setAllProducts(prev => [...prev, ...filtered]);
+            }
+
+            // Check if there are more products
+            setHasMore(filtered.length === PRODUCTS_PER_PAGE);
+
+            return filtered;
         },
         staleTime: 1000 * 60 * 2,
         placeholderData: (previousData) => previousData,
     });
+
+    // Reset pagination when search changes
+    useEffect(() => {
+        setPage(0);
+        setAllProducts([]);
+        setHasMore(true);
+    }, [search]);
 
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -164,10 +203,15 @@ export default function POSPage() {
             toast.error("Error al procesar la venta", {
                 description: errorMessage,
             });
+        },
+        onSettled: () => {
+            setIsProcessing(false);
+            setHasDelivery(false);
+            setDeliveryAmount(0);
         }
     });
 
-    const handleCheckout = async () => {
+    const handleCheckout = () => {
         if (cart.length === 0) return;
         setIsProcessing(true);
 
@@ -188,18 +232,12 @@ export default function POSPage() {
                     exchange_rate: displayCurrency === 'USD' ? 1.0 : (rates[displayCurrency as keyof ExchangeRates] || 1.0)
                 }
             ],
-            customer_id: selectedCustomer?.id || null,
+            customer_id: selectedCustomer?.id || 0,
             has_delivery: hasDelivery,
             delivery_amount_usd: hasDelivery ? deliveryAmount : 0
         };
 
-        try {
-            await salesMutation.mutateAsync(payload);
-        } finally {
-            setIsProcessing(false);
-            setHasDelivery(false);
-            setDeliveryAmount(0);
-        }
+        salesMutation.mutate(payload);
     };
 
     return (
