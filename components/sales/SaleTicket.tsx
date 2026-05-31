@@ -140,11 +140,21 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
             let lineHeight = splitName.length * 3.5;
             if (lineHeight < 4) lineHeight = 4;
 
+            // Código del producto (debajo del nombre)
+            const productCode = item.code || item.barcode;
+            if (productCode) {
+                doc.setFontSize(7);
+                doc.setFont("courier", "italic");
+                doc.text(`Código: ${productCode}`, 4, y + lineHeight - 1);
+                doc.setFont("courier", "normal");
+                lineHeight += 3;
+            }
+
             // Precio en Bs (debajo del precio USD)
             doc.setFontSize(7);
             const bsStr = `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(itemTotalBs)}`;
             const bsWidth = doc.getStringUnitWidth(bsStr) * 7 / doc.internal.scaleFactor;
-            doc.text(bsStr, 76 - bsWidth, y + 3);
+            doc.text(bsStr, 76 - bsWidth, y + 3 + (productCode ? 3 : 0));
 
             y += lineHeight + 3;
         });
@@ -287,6 +297,11 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                                         <span className="w-[10%] text-center">{item.quantity}</span>
                                         <span className="w-[45%] text-right font-bold">${itemTotal.toFixed(2)}</span>
                                     </div>
+                                    {(item.code || item.barcode) && (
+                                        <div className="flex w-full justify-between">
+                                            <span className="w-[45%] text-left text-[8px] italic text-gray-500">Código: {item.code || item.barcode}</span>
+                                        </div>
+                                    )}
                                     <div className="flex w-full justify-end">
                                         <span className="text-[8px] text-gray-500 italic">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(itemTotalBs)}</span>
                                     </div>

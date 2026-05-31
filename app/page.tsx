@@ -68,9 +68,10 @@ export default function RootPage() {
             <header className="sticky top-0 z-30 w-full bg-white/80 backdrop-blur-md border-b border-gray-200 dark:bg-gray-900/80 dark:border-gray-800">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/logo3.jpeg" alt={`${process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"} Logo`} className="w-12 h-12 object-contain rounded-full shadow-md border-2 border-indigo-100 dark:border-indigo-900" />
+                        <img src="/logo.png" alt={`${process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"} Logo`} className="w-12 h-12 object-contain rounded-full shadow-md border-2 border-indigo-100 dark:border-indigo-900" />
                         <span className="text-lg font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                            {process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"}
+                            {"Viveres App"}
+                            {/* {process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"} */}
                         </span>
                     </div>
 

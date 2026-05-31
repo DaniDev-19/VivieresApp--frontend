@@ -172,8 +172,28 @@ export default function POSPage() {
             return await api.post("/sales/", data);
         },
         onSuccess: (response) => {
+            // Enriquecer datos de la venta para el ticket
+            const saleData = response.data;
+            // Mezclar nombre y código del producto desde el carrito
+            const enrichedItems = saleData.items?.map((item: any) => {
+                const cartItem = cart.find((c: any) => c.product_id === item.product_id);
+                return {
+                    ...item,
+                    name: cartItem?.name || item.name || `Item #${item.product_id}`,
+                    code: cartItem?.barcode || item.code || item.barcode || ""
+                };
+            }) || [];
+
+            // Agregar datos del cliente
+            const enrichedSale = {
+                ...saleData,
+                items: enrichedItems,
+                customer_name: selectedCustomer?.name || saleData.customer_name || "",
+                customer_cedula: selectedCustomer?.cedula || saleData.customer_cedula || ""
+            };
+
             clearCart();
-            setCompletedSale(response.data);
+            setCompletedSale(enrichedSale);
             queryClient.invalidateQueries({ queryKey: ["products"] });
             toast.success("¡Venta procesada con éxito!", {
                 description: "La transacción ha sido registrada en el sistema.",

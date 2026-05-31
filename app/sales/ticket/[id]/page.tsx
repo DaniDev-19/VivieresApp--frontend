@@ -62,10 +62,19 @@ export default function SaleTicketPage() {
         );
     }
 
+
+    const enrichedSale = sale && sale.items ? {
+        ...sale,
+        items: sale.items.map((item: any) => ({
+            ...item,
+            code: item.code || item.barcode || ""
+        }))
+    } : sale;
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-950 py-8">
             <SaleTicket
-                sale={sale}
+                sale={enrichedSale}
                 rates={rates}
                 onClose={() => window.close()}
             />

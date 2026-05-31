@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-import { formatCurrency } from "@/lib/utils";
 import { Printer, Download, X, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
@@ -73,13 +71,19 @@ export function SaleInvoice({ sale, rates, onClose }: SaleInvoiceProps) {
         doc.text(`Dirección: ${sale.customer_address || "N/A"}`, 25, 83);
 
         // --- Items Table ---
-        const tableData = sale.items.map(item => [
-            item.name || `Producto #${item.product_id}`,
-            item.quantity.toString(),
-            `$${item.unit_price_usd.toFixed(2)}`,
-            `$${(item.quantity * item.unit_price_usd).toFixed(2)}`,
-            `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.quantity * item.unit_price_usd * effectiveRate)}`
-        ]);
+        const tableData = sale.items.map(item => {
+            const productCode = item.code || item.barcode;
+            const desc = productCode
+                ? `${item.name || `Producto #${item.product_id}`}\nCódigo: ${productCode}`
+                : (item.name || `Producto #${item.product_id}`);
+            return [
+                desc,
+                item.quantity.toString(),
+                `$${item.unit_price_usd.toFixed(2)}`,
+                `$${(item.quantity * item.unit_price_usd).toFixed(2)}`,
+                `Bs. ${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.quantity * item.unit_price_usd * effectiveRate)}`
+            ];
+        });
 
         autoTable(doc, {
             startY: 95,
@@ -245,7 +249,16 @@ export function SaleInvoice({ sale, rates, onClose }: SaleInvoiceProps) {
                                 <tbody className="divide-y divide-gray-100">
                                     {sale.items.map((item, idx) => (
                                         <tr key={idx}>
-                                            <td className="py-4 text-sm font-bold text-gray-900">{item.name || `Producto #${item.product_id}`}</td>
+                                            <td className="py-4 text-sm font-bold text-gray-900">
+                                                <div className="flex flex-col items-start">
+                                                    <span>{item.name || `Producto #${item.product_id}`}</span>
+                                                    {(item.code || item.barcode) && (
+                                                        <span className="text-[10px] text-gray-400 font-mono mt-1 bg-gray-50 dark:bg-gray-800 rounded px-1.5 py-0.5 border border-gray-100 dark:border-gray-800">
+                                                            Código: {item.code || item.barcode}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="py-4 text-sm text-gray-600 text-center">{item.quantity}</td>
                                             <td className="py-4 text-sm text-gray-600 text-right">${item.unit_price_usd.toFixed(2)}</td>
                                             <td className="py-4 text-sm font-bold text-gray-900 text-right">${(item.quantity * item.unit_price_usd).toFixed(2)}</td>
@@ -262,18 +275,18 @@ export function SaleInvoice({ sale, rates, onClose }: SaleInvoiceProps) {
                                     <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Subtotal:</span>
                                     <span className="font-bold">${(sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)).toFixed(2)}</span>
                                 </div>
-                                {sale.total_tax_usd && sale.total_tax_usd > 0 && (
+                                {sale.total_tax_usd && sale.total_tax_usd > 0 ? (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">IVA (16%):</span>
                                         <span className="font-bold">${sale.total_tax_usd.toFixed(2)}</span>
                                     </div>
-                                )}
-                                {sale.delivery_amount_usd && sale.delivery_amount_usd > 0 && (
+                                ) : null}
+                                {sale.delivery_amount_usd && sale.delivery_amount_usd > 0 ? (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Delivery:</span>
                                         <span className="font-bold">${sale.delivery_amount_usd.toFixed(2)}</span>
                                     </div>
-                                )}
+                                ) : null}
                                 <div className="flex justify-between items-center bg-indigo-600 text-white p-4 rounded-xl shadow-lg ring-4 ring-indigo-100">
                                     <span className="font-black uppercase text-xs tracking-widest">TOTAL:</span>
                                     <span className="text-2xl font-black">${sale.total_amount_usd.toFixed(2)}</span>
