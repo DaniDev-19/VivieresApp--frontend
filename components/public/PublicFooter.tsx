@@ -65,10 +65,10 @@ export function PublicFooter() {
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 group">
                                 <div className="relative w-12 h-12 rounded-full overflow-hidden shadow-lg border-2 border-indigo-100 dark:border-indigo-900 group-hover:scale-110 transition-transform duration-300">
-                                    <img src="/danidev.png" alt="DaniDev Logo" className="w-full h-full object-cover" />
+                                    <img src="/danidev.png" alt="DanijDev Logo" className="w-full h-full object-cover" />
                                 </div>
                                 <div>
-                                    <span className="block text-sm font-bold text-gray-900 dark:text-white">DaniDev</span>
+                                    <span className="block text-sm font-bold text-gray-900 dark:text-white">DanijDev</span>
                                     <span className="text-[10px] text-gray-400 uppercase">Software Engineer</span>
                                 </div>
                             </div>
@@ -79,10 +79,10 @@ export function PublicFooter() {
                                 <a href="https://linkedin.com/in/jesus-daniel-perdomo-b15578261" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-600 transition-colors">
                                     <Linkedin className="w-4 h-4" />
                                 </a>
-                                <a href="https://dani-dev-tan.vercel.app/es" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-600 transition-colors">
+                                <a href="https://danijdev.zymtaxis.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-purple-600 transition-colors">
                                     <Globe className="w-4 h-4" />
                                 </a>
-                                <a href="https://www.instagram.com/danidev19/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500 transition-colors">
+                                <a href="https://www.instagram.com/danijdev/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-500 transition-colors">
                                     <Instagram className="w-4 h-4" />
                                 </a>
                             </div>
@@ -99,7 +99,7 @@ export function PublicFooter() {
                                     <DialogHeader>
                                         <DialogTitle className="flex items-center gap-2">
                                             <Heart className="w-5 h-5 text-red-500 fill-current" />
-                                            Apoyar el trabajo de DaniDev
+                                            Apoyar el trabajo de DanijDev
                                         </DialogTitle>
                                     </DialogHeader>
                                     <div className="space-y-4 py-4">
@@ -113,7 +113,7 @@ export function PublicFooter() {
                                             </div> */}
                                             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
                                                 <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Instagram (Red Social)</span>
-                                                <code className="text-indigo-600 dark:text-indigo-400 font-mono text-sm">@danidev19</code>
+                                                <code className="text-indigo-600 dark:text-indigo-400 font-mono text-sm">@danijdev</code>
                                             </div>
                                         </div>
                                     </div>
