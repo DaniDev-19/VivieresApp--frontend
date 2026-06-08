@@ -1,3 +1,9 @@
+export interface Category {
+    id: number;
+    name: string;
+    description?: string;
+}
+
 export interface Product {
     id?: number;
     barcode: string;
@@ -7,9 +13,11 @@ export interface Product {
     profit_margin: number;
     tax_rate: number;
     price_usd?: number;
+    offer_price_usd?: number | null;
     stock_quantity: number;
     min_stock_level: number;
-    category_id?: number;
+    category_id?: number | null;
+    category?: Category | null;
     image_url: string;
     is_public: boolean;
     apply_iva_web?: boolean;
@@ -22,6 +30,7 @@ export interface Provider {
     name: string;
     rif?: string;
     contact_info?: string;
+    is_delivery?: boolean;
 }
 
 export interface PurchaseOrder {

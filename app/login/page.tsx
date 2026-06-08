@@ -55,7 +55,18 @@ export default function LoginPage() {
                 role: payload.role || 'worker'
             });
 
-            router.push("/dashboard");
+            const role = payload.role || 'worker';
+            if (role === 'admin') {
+                router.push("/dashboard");
+            } else if (role === 'worker') {
+                router.push("/pos");
+            } else if (role === 'inventory_manager') {
+                router.push("/inventory");
+            } else if (role === 'delivery') {
+                router.push("/web-orders");
+            } else {
+                router.push("/");
+            }
 
         } catch (err: any) {
             console.error(err);

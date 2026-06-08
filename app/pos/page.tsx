@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useSalesStore, ExchangeRates } from "@/store/salesStore";
-import { formatCurrency, getImageUrl } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import {
     Search,
     ShoppingCart,
@@ -13,8 +13,6 @@ import {
     Minus,
     CreditCard,
     Loader2,
-    ScanBarcode,
-    ImageIcon,
     UserPlus,
     User,
     Truck,
@@ -22,19 +20,25 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { SaleTicket } from "@/components/sales/SaleTicket";
+import { PosProductList } from "@/components/pos/PosProductList";
+import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
+import { CategoryFilterSelect } from "@/components/ui/CategoryFilterSelect";
+import { Pagination } from "@/components/ui/pagination";
+import { Product, Category } from "@/types";
 
-const PRODUCTS_PER_PAGE = 20;
+const PRODUCTS_PER_PAGE = 25;
 
 export default function POSPage() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
-    const [page, setPage] = useState(0);
-    const [allProducts, setAllProducts] = useState<any[]>([]);
-    const [hasMore, setHasMore] = useState(true);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const [detailProduct, setDetailProduct] = useState<Product | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const {
-        cart, addToCart, removeFromCart, updateQuantity, updateItemBasis, clearCart,
+        cart, addToCart, removeFromCart, updateQuantity, updateItemBasis, updateItemPriceType, clearCart,
         totalUSD, totalTax, totalConverted, totalItems,
         rates, setRates, displayCurrency, setDisplayCurrency
     } = useSalesStore();
@@ -103,69 +107,87 @@ export default function POSPage() {
         inputRef.current?.focus();
     }, []);
 
-
-    const { data: products, isLoading, isFetching } = useQuery({
-        queryKey: ["products", search, page],
-        queryFn: async () => {
-            const skip = page * PRODUCTS_PER_PAGE;
-
-            if (search.length < 2) {
-                const res = await api.get("/products/", {
-                    params: { skip, limit: PRODUCTS_PER_PAGE }
-                });
-                const filtered = res.data.filter((p: any) => p.stock_quantity > 0);
-
-                // Update accumulated products
-                if (page === 0) {
-                    setAllProducts(filtered);
-                } else {
-                    setAllProducts(prev => [...prev, ...filtered]);
-                }
-
-                // Check if there are more products
-                setHasMore(filtered.length === PRODUCTS_PER_PAGE);
-
-                return filtered;
-            }
-
-            const isBarcode = /^\d+$/.test(search) && search.length > 5;
-            const res = await api.get("/products/", {
-                params: isBarcode
-                    ? { barcode: search, skip, limit: PRODUCTS_PER_PAGE }
-                    : { search, skip, limit: PRODUCTS_PER_PAGE }
-            });
-            const filtered = res.data.filter((p: any) => p.stock_quantity > 0);
-
-            // Update accumulated products
-            if (page === 0) {
-                setAllProducts(filtered);
-            } else {
-                setAllProducts(prev => [...prev, ...filtered]);
-            }
-
-            // Check if there are more products
-            setHasMore(filtered.length === PRODUCTS_PER_PAGE);
-
-            return filtered;
-        },
-        staleTime: 1000 * 60 * 2,
-        placeholderData: (previousData) => previousData,
-    });
-
-    // Reset pagination when search changes
     useEffect(() => {
-        setPage(0);
-        setAllProducts([]);
-        setHasMore(true);
+        const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+        return () => clearTimeout(timer);
     }, [search]);
 
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch, selectedCategory]);
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && products?.length === 1) {
-            addToCart(products[0]);
-            setSearch("");
+
+    const { data: categories } = useQuery<Category[]>({
+        queryKey: ["categories"],
+        queryFn: async () => {
+            const { data } = await api.get("/categories");
+            return data;
+        },
+        staleTime: 1000 * 60 * 10,
+    });
+
+    const isSearchActive = debouncedSearch.length >= 2;
+
+    const { data: products, isLoading, isFetching } = useQuery({
+        queryKey: ["pos-products", debouncedSearch, selectedCategory, page],
+        queryFn: async () => {
+            const res = await api.get("/products/", {
+                params: {
+                    skip: (page - 1) * PRODUCTS_PER_PAGE,
+                    limit: PRODUCTS_PER_PAGE,
+                    in_stock_only: true,
+                    ...(selectedCategory != null ? { category_id: selectedCategory } : {}),
+                    ...(isSearchActive ? { search: debouncedSearch } : {}),
+                },
+            });
+            return res.data as Product[];
+        },
+        staleTime: 1000 * 60 * 2,
+        refetchOnMount: "always",
+        placeholderData: (prev) => prev,
+    });
+
+
+    const handleKeyDown = async (e: React.KeyboardEvent) => {
+        if (e.key !== "Enter") return;
+        const term = search.trim();
+        if (term.length < 2) return;
+
+        e.preventDefault();
+        setDebouncedSearch(term);
+
+        try {
+            const { data } = await api.get("/products/", {
+                params: {
+                    skip: 0,
+                    limit: 5,
+                    in_stock_only: true,
+                    search: term,
+                    ...(selectedCategory != null ? { category_id: selectedCategory } : {}),
+                },
+            });
+            const matches = (data as Product[]).filter((p) => p.stock_quantity > 0);
+
+            if (matches.length === 1) {
+                addToCart(matches[0], "normal");
+                setSearch("");
+                setDebouncedSearch("");
+                setPage(1);
+                inputRef.current?.focus();
+                toast.success("Agregado al carrito", { description: matches[0].name, duration: 1500 });
+            } else if (matches.length === 0) {
+                toast.error("Producto no encontrado", { description: `Sin resultados para "${term}"` });
+            } else {
+                toast.message("Varios resultados", {
+                    description: "Selecciona el producto correcto en la lista",
+                });
+            }
+        } catch {
+            toast.error("Error al buscar el producto");
         }
     };
+
+    const displayProducts = products ?? [];
 
     const salesMutation = useMutation({
         mutationFn: async (data: any) => {
@@ -195,6 +217,7 @@ export default function POSPage() {
             clearCart();
             setCompletedSale(enrichedSale);
             queryClient.invalidateQueries({ queryKey: ["products"] });
+            queryClient.invalidateQueries({ queryKey: ["pos-products"] });
             toast.success("¡Venta procesada con éxito!", {
                 description: "La transacción ha sido registrada en el sistema.",
                 duration: 4000,
@@ -261,96 +284,115 @@ export default function POSPage() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-(--spacing(20)))] gap-6 flex-col lg:flex-row">
+        <div className="flex min-h-0 w-full max-w-full flex-col gap-3 overflow-hidden lg:h-[calc(100dvh-5.5rem)] lg:flex-row lg:gap-4">
 
-            <div className="flex-1 flex flex-col gap-6">
-                <div className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
-                    <Search className="h-6 w-6 text-gray-400" />
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Escanear código o buscar producto..."
-                        className="flex-1 bg-transparent text-lg outline-none placeholder:text-gray-400 dark:text-white"
-                        autoComplete="off"
-                    />
-                    {isLoading && <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
+                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-stretch">
+                    <div className="flex flex-1 min-w-0 items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/15 focus-within:shadow-indigo-500/5 transition-all duration-200">
+                        <Search className="h-4.5 w-4.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Buscar o escanear..."
+                            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-gray-400 dark:text-white sm:text-base"
+                            autoComplete="off"
+                        />
+                        {isLoading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-indigo-600 dark:text-indigo-400" />}
+                    </div>
+
+                    {categories && categories.length > 0 && (
+                        <CategoryFilterSelect
+                            categories={categories}
+                            value={selectedCategory}
+                            onChange={setSelectedCategory}
+                            compact
+                            className="w-full sm:w-64 md:w-72 shrink-0"
+                        />
+                    )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 overflow-y-auto p-1">
-                    {products?.filter((p: any) => p.stock_quantity > 0).map((product: any) => (
-                        <button
-                            key={product.id}
-                            onClick={() => { addToCart(product); setSearch(""); inputRef.current?.focus(); }}
-                            className="flex flex-col items-start rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-indigo-500 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-500"
-                        >
-                            <div className="mb-2 h-24 w-full rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                                {product.image_url ? (
-                                    <img
-                                        src={getImageUrl(product.image_url)!}
-                                        alt={product.name}
-                                        className="h-full w-full object-cover"
-                                    />
+
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-xl">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                        {displayProducts.length > 0 ? (
+                            <PosProductList
+                                products={displayProducts}
+                                isLoading={isLoading}
+                                onAdd={(product, priceType) => {
+                                    addToCart(product, priceType);
+                                    inputRef.current?.focus();
+                                    toast.success(
+                                        priceType === "offer" ? "Agregado en oferta" : "Agregado al carrito",
+                                        { description: product.name, duration: 1500 }
+                                    );
+                                }}
+                                onViewDetail={setDetailProduct}
+                            />
+                        ) : !isLoading ? (
+                            <div className="flex h-full min-h-[200px] flex-col items-center justify-center px-6 py-16 text-center text-gray-400">
+                                <Search className="mb-2 h-12 w-12 opacity-20" />
+                                {isSearchActive ? (
+                                    <p>No se encontraron productos con &quot;{debouncedSearch}&quot;</p>
                                 ) : (
-                                    <ImageIcon className="h-8 w-8 text-gray-400 opacity-50" />
+                                    <>
+                                        <p>Escribe al menos 2 caracteres para buscar</p>
+                                        <p className="mt-1 text-sm">o navega el catálogo con las páginas de abajo</p>
+                                    </>
                                 )}
                             </div>
-                            <h3 className="line-clamp-2 font-medium text-gray-900 dark:text-white text-left">
-                                {product.name}
-                            </h3>
-                            <div className="mt-auto pt-2 w-full flex justify-between items-center">
-                                <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                                    ${product.price_usd.toFixed(2)}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                    Stock: {product.stock_quantity}
-                                </span>
-                            </div>
-                        </button>
-                    ))}
-                    {search.length > 2 && products?.length === 0 && !isLoading && (
-                        <div className="col-span-full py-10 text-center text-gray-500">
-                            No se encontraron productos.
-                        </div>
-                    )}
-                    {!search && (
-                        <div className="col-span-full py-20 text-center text-gray-400 flex flex-col items-center">
-                            <Search className="h-12 w-12 mb-2 opacity-20" />
-                            <p>Escanea un código de barras o escribe para buscar</p>
+                        ) : null}
+                    </div>
+
+                    {(displayProducts.length > 0 || page > 1) && (
+                        <div className="border-t border-gray-100 dark:border-gray-800">
+                            <Pagination
+                                page={page}
+                                hasNextPage={displayProducts.length === PRODUCTS_PER_PAGE}
+                                onPageChange={setPage}
+                                isLoading={isFetching}
+                            />
                         </div>
                     )}
                 </div>
+
+                {!isSearchActive && displayProducts.length > 0 && (
+                    <p className="hidden truncate text-xs text-gray-500 dark:text-gray-400 sm:block">
+                        {displayProducts.length} por página · A-Z · busca para filtrar todo el inventario
+                    </p>
+                )}
             </div>
 
 
-            <div className="w-full lg:w-96 flex flex-col rounded-2xl bg-white shadow-xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800 h-full">
-                <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-t-2xl gap-2">
-                    <div className="flex flex-col">
-                        <h2 className="font-bold text-lg flex items-center gap-2">
-                            <ShoppingCart className="h-5 w-5 text-indigo-600" />
-                            Carrito
-                        </h2>
-                        <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-bold dark:bg-indigo-900/30 dark:text-indigo-400 w-fit mt-1">
-                            {totalItems()} Ítems
-                        </span>
+            <div className="flex w-full min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 lg:w-72 xl:w-80 lg:max-h-full">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 bg-gray-50 p-2.5 dark:border-gray-800 dark:bg-gray-800/50 sm:p-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <ShoppingCart className="h-4 w-4 shrink-0 text-indigo-600" />
+                        <div className="min-w-0">
+                            <h2 className="text-sm font-bold sm:text-base">Carrito</h2>
+                            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                {totalItems()} ítems
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="flex gap-2 items-center">
+                    <div className="flex shrink-0 items-center gap-1">
                         <select
                             value={displayCurrency}
                             onChange={(e) => setDisplayCurrency(e.target.value as any)}
-                            className="w-32 rounded-lg border border-gray-200 bg-white p-1.5 text-xs font-medium outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            title="Moneda de cobro"
+                            className="max-w-[88px] cursor-pointer rounded-lg border border-gray-200 bg-white p-1 text-[10px] font-medium outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white sm:max-w-none sm:p-1.5 sm:text-xs"
                         >
-                            <option value="USD">USD ($)</option>
-                            <option value="BCV">VES (BCV)</option>
-                            <option value="USDT">VES (USDT)</option>
+                            <option value="USD">USD</option>
+                            <option value="BCV">BCV</option>
+                            <option value="USDT">USDT</option>
                             <option value="COP">COP</option>
                         </select>
 
                         {lastUpdated && (
-                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold dark:bg-green-900/30 dark:text-green-400 whitespace-nowrap">
+                            <span className="hidden rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400 xl:inline">
                                 {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         )}
@@ -358,8 +400,8 @@ export default function POSPage() {
                         <button
                             onClick={() => refreshRatesMutation.mutate()}
                             disabled={isAnyRefreshing}
-                            className={`rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-colors ${isAnyRefreshing ? 'opacity-75 cursor-not-allowed' : ''}`}
-                            title="Actualizar tasas"
+                            className={`cursor-pointer rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-colors ${isAnyRefreshing ? 'opacity-75 cursor-not-allowed' : ''}`}
+                            title="Actualizar tasas de cambio"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isAnyRefreshing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 {isAnyRefreshing ? (
@@ -393,8 +435,8 @@ export default function POSPage() {
                         </select>
                         <button
                             onClick={() => setShowCustomerModal(true)}
-                            className="rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-700"
-                            title="Nuevo cliente"
+                            className="cursor-pointer rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-700"
+                            title="Registrar nuevo cliente"
                         >
                             <UserPlus className="h-4 w-4" />
                         </button>
@@ -407,7 +449,7 @@ export default function POSPage() {
                     )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-3">
                     <AnimatePresence>
                         {cart.map((item) => (
                             <motion.div
@@ -416,10 +458,22 @@ export default function POSPage() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, height: 0 }}
                                 className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-800/20"
+                                title={item.name}
                             >
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="font-medium text-sm truncate text-gray-900 dark:text-white">{item.name}</h4>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <h4 className="font-medium text-sm text-gray-900 dark:text-white wrap-break-words leading-snug" title={item.name}>{item.name}</h4>
+                                        {item.offer_price_usd != null && item.offer_price_usd > 0 && (
+                                            <select
+                                                value={item.priceType || "normal"}
+                                                onChange={(e) => updateItemPriceType(item.product_id, e.target.value as "normal" | "offer")}
+                                                className="text-[10px] font-semibold bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded px-1.5 py-0.5 outline-none text-orange-700 dark:text-orange-300 cursor-pointer"
+                                                title="Tipo de precio"
+                                            >
+                                                <option value="normal">Normal</option>
+                                                <option value="offer">Oferta</option>
+                                            </select>
+                                        )}
                                         <select
                                             value={item.priceBasis}
                                             onChange={(e) => updateItemBasis(item.product_id, e.target.value as any)}
@@ -446,14 +500,16 @@ export default function POSPage() {
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                                        className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                                        className="cursor-pointer rounded-md p-1 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                        title="Disminuir cantidad"
                                     >
                                         <Minus className="h-3 w-3" />
                                     </button>
                                     <span className="w-6 text-center font-medium text-sm">{item.quantity}</span>
                                     <button
                                         onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                                        className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                                        className="cursor-pointer rounded-md p-1 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                        title="Aumentar cantidad"
                                     >
                                         <Plus className="h-3 w-3" />
                                     </button>
@@ -465,7 +521,8 @@ export default function POSPage() {
                                 </div>
                                 <button
                                     onClick={() => removeFromCart(item.product_id)}
-                                    className="text-gray-400 hover:text-red-500"
+                                    className="cursor-pointer text-gray-400 hover:text-red-500"
+                                    title="Quitar del carrito"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
@@ -548,7 +605,8 @@ export default function POSPage() {
                     <button
                         onClick={handleCheckout}
                         disabled={cart.length === 0 || isProcessing}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 text-white font-bold shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 hover:shadow-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed dark:shadow-none"
+                        title="Procesar cobro de la venta"
+                        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 font-bold text-white shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 hover:shadow-indigo-300 disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-none"
                     >
                         {isProcessing ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
@@ -571,6 +629,11 @@ export default function POSPage() {
                 )
             }
 
+
+            <ProductDetailModal
+                product={detailProduct}
+                onClose={() => setDetailProduct(null)}
+            />
 
             {
                 showCustomerModal && (

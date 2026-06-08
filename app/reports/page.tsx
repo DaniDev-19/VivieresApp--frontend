@@ -26,10 +26,16 @@ export default function ReportsPage() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [loadingSales, setLoadingSales] = useState(false);
+    
+    // Cash Close State
+    const [cashCloseDate, setCashCloseDate] = useState(new Date().toISOString().split('T')[0]);
+    const [loadingCashClose, setLoadingCashClose] = useState(false);
 
     // Inventory State
     const [inventoryFilter, setInventoryFilter] = useState("all");
     const [loadingInventory, setLoadingInventory] = useState(false);
+    const [loadingLowStockRep, setLoadingLowStockRep] = useState(false);
+    const [inventoryReportType, setInventoryReportType] = useState("standard");
 
     // Labels State
     const [productSearch, setProductSearch] = useState("");
@@ -39,6 +45,53 @@ export default function ReportsPage() {
     // Rankings State
     const [rankingsDateStart, setRankingsDateStart] = useState("");
     const [rankingsDateEnd, setRankingsDateEnd] = useState("");
+    const [exportingRankings, setExportingRankings] = useState(false);
+
+    const handleExportRankings = async () => {
+        try {
+            setExportingRankings(true);
+            let url = `/reports/rankings/export`;
+            const params = new URLSearchParams();
+            if (rankingsDateStart) params.append("start_date", rankingsDateStart);
+            if (rankingsDateEnd) params.append("end_date", rankingsDateEnd);
+            
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+            
+            const res = await api.get(url, { responseType: 'blob' });
+            const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+            window.open(blobUrl, '_blank');
+            toast.success("Reporte de Rankings abierto en nueva pestaña");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al exportar reporte de rankings");
+        } finally {
+            setExportingRankings(false);
+        }
+    };
+
+    // Analytics (Crecimiento) State
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const [exportingMonthly, setExportingMonthly] = useState(false);
+
+    const handleExportMonthly = async () => {
+        try {
+            setExportingMonthly(true);
+            const res = await api.get(`/reports/growth/monthly/export`, {
+                params: { year: selectedYear },
+                responseType: 'blob'
+            });
+            const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+            window.open(blobUrl, '_blank');
+            toast.success(`Reporte mensual del año ${selectedYear} abierto en nueva pestaña`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al exportar reporte de crecimiento mensual");
+        } finally {
+            setExportingMonthly(false);
+        }
+    };
 
     // Fetch Products for Labels
     const { data: products, isLoading: isLoadingProducts } = useQuery({
@@ -67,6 +120,14 @@ export default function ReportsPage() {
     const { data: annualGrowth, isLoading: isLoadingGrowth } = useQuery({
         queryKey: ["annual-growth"],
         queryFn: async () => (await api.get("/reports/growth/annual")).data,
+        enabled: activeTab === "analytics"
+    });
+
+    const { data: monthlyGrowth, isLoading: isLoadingMonthly } = useQuery({
+        queryKey: ["monthly-growth", selectedYear],
+        queryFn: async () => (await api.get("/reports/growth/monthly", {
+            params: { year: selectedYear }
+        })).data,
         enabled: activeTab === "analytics"
     });
 
@@ -105,15 +166,19 @@ export default function ReportsPage() {
         setLabelQueue(prev => prev.map((item, i) => i === index ? { ...item, quantity } : item));
     };
 
-    const triggerDownload = (blob: Blob, filenamePrefix: string) => {
-        const url = window.URL.createObjectURL(new Blob([blob]));
-        const link = document.createElement("a");
-        link.href = url;
-        const ext = blob.type.includes("pdf") ? "pdf" : "xlsx";
-        link.setAttribute("download", `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.${ext}`);
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode?.removeChild(link);
+    const triggerOpenOrDownload = (blob: Blob, filenamePrefix: string) => {
+        const url = window.URL.createObjectURL(blob);
+        if (blob.type.includes("pdf")) {
+            window.open(url, "_blank");
+        } else {
+            const link = document.createElement("a");
+            link.href = url;
+            const ext = "xlsx";
+            link.setAttribute("download", `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.${ext}`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+        }
     };
 
     const downloadSalesReport = async (format: "pdf" | "excel") => {
@@ -129,13 +194,46 @@ export default function ReportsPage() {
                 params,
                 responseType: "blob",
             });
-            triggerDownload(response.data, `Reporte_Ventas_${format}`);
-            toast.success(`Reporte ${format.toUpperCase()} descargado correctamente`);
+            triggerOpenOrDownload(response.data, `Reporte_Ventas_${format}`);
+            toast.success(format === "pdf" ? "Reporte abierto en nueva pestaña" : "Reporte Excel descargado correctamente");
         } catch (error) {
             console.error(error);
             toast.error("Error al descargar el reporte");
         } finally {
             setLoadingSales(false);
+        }
+    };
+
+    const downloadCashCloseReport = async () => {
+        try {
+            setLoadingCashClose(true);
+            const response = await api.get("/reports/cash-close", {
+                params: { date_str: cashCloseDate },
+                responseType: "blob",
+            });
+            triggerOpenOrDownload(response.data, `Cierre_Caja_${cashCloseDate}`);
+            toast.success("Cierre de caja abierto en nueva pestaña");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al generar el cierre de caja");
+        } finally {
+            setLoadingCashClose(false);
+        }
+    };
+
+    const downloadLowStockRepReport = async () => {
+        try {
+            setLoadingLowStockRep(true);
+            const response = await api.get("/reports/low-stock/export", {
+                responseType: "blob",
+            });
+            triggerOpenOrDownload(response.data, "Alerta_Bajo_Stock_Reposicion");
+            toast.success("Reporte de reposición abierto en nueva pestaña");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al generar reporte de reposición");
+        } finally {
+            setLoadingLowStockRep(false);
         }
     };
 
@@ -145,13 +243,14 @@ export default function ReportsPage() {
             const params = {
                 filter: inventoryFilter,
                 format,
+                type: inventoryReportType,
             };
             const response = await api.get("/reports/inventory/export", {
                 params,
                 responseType: "blob",
             });
-            triggerDownload(response.data, `Reporte_Inventario_${format}`);
-            toast.success(`Reporte de Inventario descargado`);
+            triggerOpenOrDownload(response.data, `Reporte_Inventario_${format}`);
+            toast.success(format === "pdf" ? "Reporte de Inventario abierto en nueva pestaña" : "Reporte de Inventario descargado");
         } catch (error) {
             console.error(error);
             toast.error("Error al descargar reporte");
@@ -173,8 +272,8 @@ export default function ReportsPage() {
             const response = await api.post("/reports/labels/generate", payload, {
                 responseType: "blob"
             });
-            triggerDownload(response.data, "Etiquetas_Productos");
-            toast.success("Etiquetas generadas exitosamente");
+            triggerOpenOrDownload(response.data, "Etiquetas_Productos");
+            toast.success("Etiquetas abiertas en nueva pestaña");
         } catch (error) {
             console.error(error);
             toast.error("Error al generar etiquetas");
@@ -221,11 +320,12 @@ export default function ReportsPage() {
             {/* Content */}
             <div className="mt-6">
                 {activeTab === "sales" && (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <div className="col-span-full rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {/* Exportar Ventas Card */}
+                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Exportar Reporte de Ventas</h3>
 
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                            <div className="grid gap-4 sm:grid-cols-2 mb-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
                                     <input
@@ -265,55 +365,139 @@ export default function ReportsPage() {
                                 </button>
                             </div>
                         </div>
+
+                        {/* Cierre de Caja Card */}
+                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Arqueo y Cierre de Caja Diario</h3>
+
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha del Cierre</label>
+                                <input
+                                    type="date"
+                                    value={cashCloseDate}
+                                    onChange={(e) => setCashCloseDate(e.target.value)}
+                                    className="w-full md:w-1/2 rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Genera un arqueo de caja con el total de operaciones y desglose por método de pago para auditar el cuadre de fondos.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={downloadCashCloseReport}
+                                disabled={loadingCashClose}
+                                className="inline-flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30 disabled:opacity-50 transition-colors"
+                            >
+                                {loadingCashClose ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                Generar Cierre de Caja (PDF)
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {activeTab === "inventory" && (
-                    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:w-2/3">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Reporte de Inventario</h3>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {/* Reporte de Inventario Card */}
+                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Exportar Catálogo de Inventario</h3>
 
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por</label>
-                            <div className="flex gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="invFilter"
-                                        checked={inventoryFilter === 'all'}
-                                        onChange={() => setInventoryFilter('all')}
-                                        className="text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                    <span className="text-sm">Todo el Inventario</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="invFilter"
-                                        checked={inventoryFilter === 'low_stock'}
-                                        onChange={() => setInventoryFilter('low_stock')}
-                                        className="text-indigo-600 focus:ring-indigo-500"
-                                    />
-                                    <span className="text-sm">Solo Bajo Stock</span>
-                                </label>
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por</label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="invFilter"
+                                            checked={inventoryFilter === 'all'}
+                                            onChange={() => setInventoryFilter('all')}
+                                            className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-sm">Todo el Inventario</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="invFilter"
+                                            checked={inventoryFilter === 'low_stock'}
+                                            onChange={() => setInventoryFilter('low_stock')}
+                                            className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-sm">Solo Bajo Stock</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Columnas del Reporte</label>
+                                <div className="flex flex-col gap-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="invReportType"
+                                            checked={inventoryReportType === 'standard'}
+                                            onChange={() => setInventoryReportType('standard')}
+                                            className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-sm">General (Todo el detalle)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="invReportType"
+                                            checked={inventoryReportType === 'code_name'}
+                                            onChange={() => setInventoryReportType('code_name')}
+                                            className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-sm">Solo Código y Nombre</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="invReportType"
+                                            checked={inventoryReportType === 'prices'}
+                                            onChange={() => setInventoryReportType('prices')}
+                                            className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-sm">Precios (Oferta y Final)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-3">
+                                <button
+                                    onClick={() => downloadInventoryReport("pdf")}
+                                    disabled={loadingInventory}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingInventory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    Descargar PDF
+                                </button>
+                                <button
+                                    onClick={() => downloadInventoryReport("excel")}
+                                    disabled={loadingInventory}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingInventory ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                                    Descargar Excel
+                                </button>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-3">
+                        {/* Alerta de Stock Crítico y Reposición Card */}
+                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Alerta de Stock Crítico y Reposición</h3>
+
+                            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                                Genera un reporte optimizado para compras de reabastecimiento. Muestra los productos agotados o bajo el mínimo, calcula la inversión total estimada necesaria en dólares e identifica los proveedores sugeridos basándose en el historial de compras.
+                            </p>
+
                             <button
-                                onClick={() => downloadInventoryReport("pdf")}
-                                disabled={loadingInventory}
-                                className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors"
+                                onClick={downloadLowStockRepReport}
+                                disabled={loadingLowStockRep}
+                                className="inline-flex items-center gap-2 rounded-xl bg-rose-50 px-5 py-3 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/30 disabled:opacity-50 transition-colors shadow-sm"
                             >
-                                {loadingInventory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                Descargar PDF
-                            </button>
-                            <button
-                                onClick={() => downloadInventoryReport("excel")}
-                                disabled={loadingInventory}
-                                className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
-                            >
-                                {loadingInventory ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                                Descargar Excel
+                                {loadingLowStockRep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                Generar Reporte de Reposición (PDF)
                             </button>
                         </div>
                     </div>
@@ -437,6 +621,14 @@ export default function ReportsPage() {
                                 className="px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors"
                             >
                                 Limpiar Filtros
+                            </button>
+                            <button
+                                onClick={handleExportRankings}
+                                disabled={exportingRankings}
+                                className="ml-auto flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-500/20"
+                            >
+                                {exportingRankings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                Exportar PDF
                             </button>
                         </div>
 
@@ -593,24 +785,127 @@ export default function ReportsPage() {
                 {activeTab === "analytics" && (
                     <div className="space-y-6">
                         <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-8">Crecimiento Anual</h3>
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Crecimiento Anual</h3>
+                            <p className="text-sm text-gray-500 mb-8">Selecciona un año para ver el desglose detallado de ventas y ganancias mes a mes en la tabla inferior.</p>
+                            
                             <div className="grid gap-8 md:grid-cols-2">
-                                {annualGrowth?.map((yearData: any) => (
-                                    <div key={yearData.year} className="p-6 rounded-3xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30">
-                                        <h4 className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mb-4">{yearData.year}</h4>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-end">
-                                                <p className="text-sm font-bold text-gray-500">Total USD</p>
-                                                <p className="text-2xl font-black text-gray-900 dark:text-white">${yearData.total_usd.toLocaleString()}</p>
+                                {annualGrowth?.map((yearData: any) => {
+                                    const isSelected = selectedYear === yearData.year;
+                                    return (
+                                        <div
+                                            key={yearData.year}
+                                            onClick={() => setSelectedYear(yearData.year)}
+                                            className={`p-6 rounded-3xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] hover:shadow-lg border-2 ${
+                                                isSelected
+                                                    ? "bg-indigo-50/80 dark:bg-indigo-900/30 border-indigo-500 shadow-md ring-2 ring-indigo-500/10"
+                                                    : "bg-gray-50/50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700"
+                                            }`}
+                                        >
+                                            <div className="flex justify-between items-center mb-6 border-b border-indigo-100 dark:border-indigo-900/40 pb-2">
+                                                <h4 className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{yearData.year}</h4>
+                                                {isSelected && (
+                                                    <span className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-black uppercase rounded-full tracking-wider shadow-sm">
+                                                        Seleccionado
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="flex justify-between items-end">
-                                                <p className="text-sm font-bold text-gray-500">Est. VES</p>
-                                                <p className="text-lg font-bold text-indigo-500">Bs. {yearData.total_bs.toLocaleString()}</p>
+                                            
+                                            <div className="space-y-6">
+                                                {/* Sección Ventas (Ingresos) */}
+                                                <div>
+                                                    <h5 className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3">Ventas Totales</h5>
+                                                    <div className="space-y-2">
+                                                        <div className="flex justify-between items-end">
+                                                            <p className="text-sm font-medium text-gray-500">Monto USD</p>
+                                                            <p className="text-xl font-black text-gray-900 dark:text-white">${yearData.total_usd.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="flex justify-between items-end">
+                                                            <p className="text-sm font-medium text-gray-500">Monto VES (BCV)</p>
+                                                            <p className="text-sm font-bold text-indigo-500">Bs. {yearData.total_bs_bcv.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="flex justify-between items-end">
+                                                            <p className="text-sm font-medium text-gray-500">Monto VES (USDT)</p>
+                                                            <p className="text-sm font-bold text-amber-500">Bs. {yearData.total_bs_usdt.toFixed(2)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Sección Ganancias */}
+                                                <div className="border-t border-indigo-100 dark:border-indigo-900/40 pt-4">
+                                                    <h5 className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3">Ganancia Estimada</h5>
+                                                    <div className="space-y-2">
+                                                        <div className="flex justify-between items-end">
+                                                            <p className="text-sm font-medium text-gray-500">Ganancia USD</p>
+                                                            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">${yearData.profit_usd.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="flex justify-between items-end">
+                                                            <p className="text-sm font-medium text-gray-500">Ganancia VES (BCV)</p>
+                                                            <p className="text-sm font-bold text-indigo-500">Bs. {yearData.profit_bs_bcv.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="flex justify-between items-end">
+                                                            <p className="text-sm font-medium text-gray-500">Ganancia VES (USDT)</p>
+                                                            <p className="text-sm font-bold text-amber-500">Bs. {yearData.profit_bs_usdt.toFixed(2)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
+                        </div>
+
+                        {/* Monthly Growth Section */}
+                        <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                                <h3 className="text-xl font-black text-gray-900 dark:text-white">
+                                    Ganancia y Ventas Mensuales ({selectedYear})
+                                </h3>
+                                <button
+                                    onClick={handleExportMonthly}
+                                    disabled={exportingMonthly}
+                                    className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    {exportingMonthly ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                    Exportar PDF Mensual
+                                </button>
+                            </div>
+                            
+                            {isLoadingMonthly ? (
+                                <div className="flex flex-col items-center justify-center py-10">
+                                    <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-2" />
+                                    <p className="text-sm text-gray-500 font-medium">Cargando reporte mensual...</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+                                    <table className="w-full text-left border-collapse text-sm">
+                                        <thead>
+                                            <tr className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-bold border-b border-gray-100 dark:border-gray-800">
+                                                <th className="p-4">Mes</th>
+                                                <th className="p-4 text-right">Ventas (USD)</th>
+                                                <th className="p-4 text-right">Ganancia (USD)</th>
+                                                <th className="p-4 text-right">Ventas BCV (VES)</th>
+                                                <th className="p-4 text-right">Ganancia BCV (VES)</th>
+                                                <th className="p-4 text-right">Ventas USDT (VES)</th>
+                                                <th className="p-4 text-right">Ganancia USDT (VES)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                            {monthlyGrowth?.map((monthData: any) => (
+                                                <tr key={monthData.month_num} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                                                    <td className="p-4 font-bold text-gray-900 dark:text-white">{monthData.month_name}</td>
+                                                    <td className="p-4 text-right font-black text-indigo-600 dark:text-indigo-400">${monthData.total_usd.toFixed(2)}</td>
+                                                    <td className="p-4 text-right font-black text-emerald-600 dark:text-emerald-400">${monthData.profit_usd.toFixed(2)}</td>
+                                                    <td className="p-4 text-right text-gray-500 dark:text-gray-400">Bs. {monthData.total_bs_bcv.toFixed(2)}</td>
+                                                    <td className="p-4 text-right text-gray-500 dark:text-gray-400">Bs. {monthData.profit_bs_bcv.toFixed(2)}</td>
+                                                    <td className="p-4 text-right text-gray-500 dark:text-gray-400">Bs. {monthData.total_bs_usdt.toFixed(2)}</td>
+                                                    <td className="p-4 text-right text-gray-500 dark:text-gray-400">Bs. {monthData.profit_bs_usdt.toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

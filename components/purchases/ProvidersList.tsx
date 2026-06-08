@@ -18,6 +18,7 @@ function ProviderForm({ provider, onSuccess, onCancel }: { provider?: Provider, 
         name: provider?.name || "",
         rif: provider?.rif || "",
         contact_info: provider?.contact_info || "",
+        is_delivery: provider?.is_delivery || false,
     });
 
     const mutation = useMutation({
@@ -70,6 +71,18 @@ function ProviderForm({ provider, onSuccess, onCancel }: { provider?: Provider, 
                     placeholder="Juan Perez - 0414-1234567"
                     rows={3}
                 />
+            </div>
+            <div className="flex items-center gap-2 py-1">
+                <input
+                    type="checkbox"
+                    id="is_delivery"
+                    checked={formData.is_delivery}
+                    onChange={e => setFormData({ ...formData, is_delivery: e.target.checked })}
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 dark:bg-gray-800 dark:border-gray-700"
+                />
+                <label htmlFor="is_delivery" className="text-sm font-medium select-none cursor-pointer dark:text-gray-300">
+                    ¿Es proveedor de delivery / envíos?
+                </label>
             </div>
             <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-md">Cancelar</button>
@@ -147,7 +160,14 @@ export function ProvidersList() {
                                     <Truck className="w-5 h-5 text-indigo-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-900 dark:text-white">{prov.name}</h3>
+                                    <div className="flex items-center gap-1.5">
+                                        <h3 className="font-semibold text-gray-900 dark:text-white">{prov.name}</h3>
+                                        {prov.is_delivery && (
+                                            <span className="inline-flex items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-xxs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                                Delivery
+                                            </span>
+                                        )}
+                                    </div>
                                     <p className="text-xs text-gray-500">{prov.rif}</p>
                                 </div>
                             </div>

@@ -1,11 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type PriceType = 'normal' | 'offer';
+
 export interface CartItem {
     product_id: number;
     barcode: string;
     name: string;
-    price: number; // Unit price (USD)
+    price: number; // Unit price activo (USD)
+    price_usd: number; // Precio normal
+    offer_price_usd?: number | null;
+    priceType: PriceType;
     quantity: number;
     tax_rate: number;
     profit_margin: number;
@@ -25,10 +30,11 @@ interface SalesState {
     deliveryUSD: number;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    addToCart: (product: any) => void;
+    addToCart: (product: any, priceType?: PriceType) => void;
     removeFromCart: (productId: number) => void;
     updateQuantity: (productId: number, quantity: number) => void;
     updateItemBasis: (productId: number, basis: CartItem['priceBasis']) => void;
+    updateItemPriceType: (productId: number, priceType: PriceType) => void;
     clearCart: () => void;
 
     setRates: (rates: ExchangeRates) => void;
@@ -50,15 +56,30 @@ export const useSalesStore = create<SalesState>()(
             displayCurrency: 'USD',
             deliveryUSD: 0,
 
-            addToCart: (product) => {
+            addToCart: (product, priceType = 'normal') => {
                 const { cart, displayCurrency } = get();
+                const resolvedType: PriceType =
+                    priceType === 'offer' && product.offer_price_usd != null && product.offer_price_usd > 0
+                        ? 'offer'
+                        : 'normal';
+                const unitPrice =
+                    resolvedType === 'offer'
+                        ? Number(product.offer_price_usd)
+                        : Number(product.price_usd);
                 const existing = cart.find((item) => item.product_id === product.id);
 
                 if (existing) {
                     set({
                         cart: cart.map((item) =>
                             item.product_id === product.id
-                                ? { ...item, quantity: item.quantity + 1 }
+                                ? {
+                                    ...item,
+                                    quantity: item.quantity + 1,
+                                    priceType: resolvedType,
+                                    price: unitPrice,
+                                    offer_price_usd: product.offer_price_usd ?? null,
+                                    price_usd: Number(product.price_usd),
+                                }
                                 : item
                         ),
                     });
@@ -70,9 +91,12 @@ export const useSalesStore = create<SalesState>()(
                                 product_id: product.id,
                                 barcode: product.barcode,
                                 name: product.name,
-                                price: product.price_usd,
+                                price: unitPrice,
+                                price_usd: Number(product.price_usd),
+                                offer_price_usd: product.offer_price_usd ?? null,
+                                priceType: resolvedType,
                                 quantity: 1,
-                                tax_rate: product.tax_rate,
+                                tax_rate: product.tax_rate ?? 0,
                                 profit_margin: product.profit_margin,
                                 priceBasis: displayCurrency === 'USD' ? 'USD' : displayCurrency as any
                             },
@@ -102,6 +126,22 @@ export const useSalesStore = create<SalesState>()(
                     cart: get().cart.map((item) =>
                         item.product_id === productId ? { ...item, priceBasis: basis } : item
                     ),
+                });
+            },
+
+            updateItemPriceType: (productId, priceType) => {
+                set({
+                    cart: get().cart.map((item) => {
+                        if (item.product_id !== productId) return item;
+                        if (priceType === 'offer' && (item.offer_price_usd == null || item.offer_price_usd <= 0)) {
+                            return item;
+                        }
+                        return {
+                            ...item,
+                            priceType,
+                            price: priceType === 'offer' ? Number(item.offer_price_usd) : item.price_usd,
+                        };
+                    }),
                 });
             },
 

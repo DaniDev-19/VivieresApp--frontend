@@ -358,6 +358,10 @@ export function OrdersList() {
             setExpandedOrder(null);
             toast.success("Orden eliminada correctamente");
             setConfirmAction({ isOpen: false, type: null, id: null });
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.detail || "Error al eliminar la orden");
+            setConfirmAction({ isOpen: false, type: null, id: null });
         }
     });
 
@@ -572,13 +576,15 @@ export function OrdersList() {
                                             >
                                                 <FileText className="w-4 h-4" />
                                             </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
-                                                className="p-1 text-red-500 hover:bg-red-50 rounded bg-white border border-transparent hover:border-red-100 transition-colors"
-                                                title="Eliminar orden"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            {order.status !== 'completed' && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
+                                                    className="p-1 text-red-500 hover:bg-red-50 rounded bg-white border border-transparent hover:border-red-100 transition-colors"
+                                                    title="Eliminar orden"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

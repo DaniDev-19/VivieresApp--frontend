@@ -16,7 +16,7 @@ export function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const logout = useAuthStore((state) => state.logout);
-    const { isSidebarOpen, closeSidebar } = useUIStore();
+    const { isSidebarOpen, closeSidebar, isSidebarCollapsed } = useUIStore();
 
     const handleLogout = () => {
         logout();
@@ -29,7 +29,7 @@ export function Sidebar() {
     const userRole = (user?.role || 'worker') as any; // Cast as any to avoid strict type issues with string from store vs enum
 
     const SidebarContent = () => (
-        <div className="flex h-full flex-col px-3 py-4">
+        <div className="flex h-full flex-col px-3 py-4 overflow-y-auto custom-scrollbar">
             <div className="mb-8 flex flex-col items-center justify-center pt-4 px-2 text-center">
                 <img src="/logo.png" alt={`${process.env.NEXT_PUBLIC_BUSINESS_NAME || "ViveresApp"} Logo`} className="w-24 h-24 object-contain rounded-full shadow-lg border-2 border-indigo-50 dark:border-indigo-900/50 mb-3" />
                 <div className="text-x font-black leading-tight bg-linear-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent uppercase tracking-tight">
@@ -79,7 +79,12 @@ export function Sidebar() {
 
     return (
         <>
-            <aside className="hidden lg:block fixed left-0 top-0 z-40 h-screen w-64 border-r border-gray-200 bg-white/80 backdrop-blur-xl transition-transform dark:border-gray-800 dark:bg-gray-950/80">
+            <aside
+                className={clsx(
+                    "fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-gray-200 bg-white/80 backdrop-blur-xl transition-transform duration-300 dark:border-gray-800 dark:bg-gray-950/80 lg:block",
+                    isSidebarCollapsed && "-translate-x-full"
+                )}
+            >
                 <SidebarContent />
             </aside>
 

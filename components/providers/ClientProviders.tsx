@@ -9,6 +9,29 @@ import { CurrencyCalculator } from "@/components/shared/CurrencyCalculator";
 import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "./ThemeProvider";
+import { useUIStore } from "@/store/uiStore";
+import { clsx } from "clsx";
+
+function AppShell({ children }: { children: React.ReactNode }) {
+    const isSidebarCollapsed = useUIStore((s) => s.isSidebarCollapsed);
+
+    return (
+        <div className="flex min-h-screen overflow-x-hidden bg-background text-foreground transition-colors duration-300">
+            <Sidebar />
+            <div
+                className={clsx(
+                    "flex min-h-screen w-full min-w-0 flex-col transition-all duration-300",
+                    isSidebarCollapsed ? "lg:ml-0" : "lg:ml-64"
+                )}
+            >
+                <Header />
+                <main className="min-w-0 flex-1 overflow-x-hidden p-3 font-sans sm:p-4 lg:p-5">
+                    {children}
+                </main>
+            </div>
+        </div>
+    );
+}
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient());
@@ -28,15 +51,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
                     {isPublic ? (
                         children
                     ) : (
-                        <div className="flex min-h-screen items-start bg-background text-foreground transition-colors duration-300">
-                            <Sidebar />
-                            <div className="flex w-full flex-col lg:ml-64 transition-all duration-300 min-h-screen">
-                                <Header />
-                                <main className="flex-1 p-4 sm:p-6 overflow-auto font-sans">
-                                    {children}
-                                </main>
-                            </div>
-                        </div>
+                        <AppShell>{children}</AppShell>
                     )}
                 </AuthGuard>
                 <CurrencyCalculator />

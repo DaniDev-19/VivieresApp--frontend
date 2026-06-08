@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { Loader2, Upload, X, ImageIcon } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
-import { Product } from "@/types";
+import { Product, Category } from "@/types";
+import { toast } from "sonner";
 
 
 interface ProductFormProps {
@@ -14,47 +15,96 @@ interface ProductFormProps {
     onCancel: () => void;
 }
 
+const EMPTY_PRODUCT: Product = {
+    barcode: "",
+    name: "",
+    description: "",
+    cost_price: 0,
+    profit_margin: 0.30,
+    stock_quantity: 0,
+    min_stock_level: 5,
+    image_url: "",
+    is_public: true,
+    apply_iva_web: true,
+    tax_rate: 0.16,
+    category_id: null,
+    offer_price_usd: null,
+};
+
+function toApiPayload(data: Product) {
+    return {
+        barcode: data.barcode,
+        name: data.name,
+        description: data.description || null,
+        cost_price: Number(data.cost_price),
+        profit_margin: Number(data.profit_margin),
+        tax_rate: Number(data.tax_rate),
+        stock_quantity: Number(data.stock_quantity),
+        min_stock_level: Number(data.min_stock_level),
+        category_id: data.category_id ?? null,
+        offer_price_usd:
+            data.offer_price_usd != null && data.offer_price_usd > 0
+                ? Number(data.offer_price_usd)
+                : null,
+        image_url: data.image_url || null,
+        is_public: data.is_public,
+        apply_iva_web: data.apply_iva_web,
+    };
+}
+
 export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) {
     const queryClient = useQueryClient();
-    const [formData, setFormData] = useState<Product>({
-        barcode: "",
-        name: "",
-        description: "",
-        cost_price: 0,
-        profit_margin: 0.30,
-        stock_quantity: 0,
-        min_stock_level: 5,
-        image_url: "",
-        is_public: true,
-        apply_iva_web: true,
-        tax_rate: 0.16, // 16% por defecto
+
+    const { data: categories } = useQuery<Category[]>({
+        queryKey: ["categories"],
+        queryFn: async () => {
+            const { data } = await api.get("/categories");
+            return data;
+        },
     });
 
+    const [formData, setFormData] = useState<Product>(EMPTY_PRODUCT);
+
     useEffect(() => {
-        if (product) {
-            setFormData({
-                ...formData, // Mantener valores por defecto para campos faltantes
-                ...product,
-                cost_price: Number(product.cost_price || 0),
-                profit_margin: Number(product.profit_margin || 0.30),
-                stock_quantity: Number(product.stock_quantity || 0),
-                min_stock_level: Number(product.min_stock_level || 0),
-                tax_rate: Number(product.tax_rate || 0.16),
-            } as Product);
+        if (!product?.id) {
+            setFormData(EMPTY_PRODUCT);
+            return;
         }
-    }, [product]);
+        setFormData({
+            barcode: product.barcode ?? "",
+            name: product.name ?? "",
+            description: product.description ?? "",
+            cost_price: Number(product.cost_price ?? 0),
+            profit_margin:
+                product.profit_margin != null ? Number(product.profit_margin) : 0.30,
+            tax_rate: product.tax_rate != null ? Number(product.tax_rate) : 0.16,
+            stock_quantity: Number(product.stock_quantity ?? 0),
+            min_stock_level: Number(product.min_stock_level ?? 5),
+            category_id: product.category_id ?? product.category?.id ?? null,
+            offer_price_usd: product.offer_price_usd ?? null,
+            image_url: product.image_url ?? "",
+            is_public: product.is_public ?? true,
+            apply_iva_web: product.apply_iva_web ?? true,
+        });
+    }, [product?.id]);
 
     const mutation = useMutation({
         mutationFn: async (data: Product) => {
+            const payload = toApiPayload(data);
             if (product?.id) {
-                await api.put(`/products/${product.id}`, data);
+                await api.put(`/products/${product.id}`, payload);
             } else {
-                await api.post("/products/", data);
+                await api.post("/products/", payload);
             }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             onSuccess();
+        },
+        onError: (err: any) => {
+            toast.error("Error al guardar producto", {
+                description: err.response?.data?.detail || "Revisa los datos e intenta de nuevo",
+            });
         },
     });
 
@@ -117,6 +167,28 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                             placeholder="Harina PAN 1kg"
                         />
                     </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Categoría
+                        </label>
+                        <select
+                            value={formData.category_id ?? ""}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    category_id: e.target.value ? parseInt(e.target.value) : null,
+                                })
+                            }
+                            className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
+                        >
+                            <option value="">Sin categoría</option>
+                            {categories?.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 {/* Pricing */}
@@ -175,6 +247,31 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                                 ${(Number(formData.cost_price || 0) * (1 + Number(formData.profit_margin || 0))).toFixed(2)}
                             </div>
                         </div>
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Precio de Oferta (USD)
+                        </label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={formData.offer_price_usd ?? ""}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        offer_price_usd: e.target.value ? parseFloat(e.target.value) : null,
+                                    })
+                                }
+                                className="w-full rounded-lg border border-orange-200 bg-orange-50/50 p-2.5 pl-7 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:border-orange-800 dark:bg-orange-900/10 dark:text-white"
+                                placeholder="Opcional — precio fijo sin margen"
+                            />
+                        </div>
+                        <p className="mt-1 text-[10px] text-gray-500">
+                            Precio directo de rebaja. No aplica el 30% de margen.
+                        </p>
                     </div>
                 </div>
 
