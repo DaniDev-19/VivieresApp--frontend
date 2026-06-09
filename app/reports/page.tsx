@@ -26,7 +26,7 @@ export default function ReportsPage() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [loadingSales, setLoadingSales] = useState(false);
-    
+
     // Cash Close State
     const [cashCloseDate, setCashCloseDate] = useState(new Date().toISOString().split('T')[0]);
     const [loadingCashClose, setLoadingCashClose] = useState(false);
@@ -54,11 +54,11 @@ export default function ReportsPage() {
             const params = new URLSearchParams();
             if (rankingsDateStart) params.append("start_date", rankingsDateStart);
             if (rankingsDateEnd) params.append("end_date", rankingsDateEnd);
-            
+
             if (params.toString()) {
                 url += `?${params.toString()}`;
             }
-            
+
             const res = await api.get(url, { responseType: 'blob' });
             const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
             window.open(blobUrl, '_blank');
@@ -264,7 +264,7 @@ export default function ReportsPage() {
             setLoadingLabels(true);
             const payload = labelQueue.map(item => ({
                 product_id: Number(item.product_id),
-                name: String(item.name).substring(0, 50), // Limit length just in case
+                name: String(item.name).substring(0, 60),
                 price: Number(item.price) || 0,
                 quantity: Number(item.quantity) || 1
             }));
@@ -787,7 +787,7 @@ export default function ReportsPage() {
                         <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                             <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Crecimiento Anual</h3>
                             <p className="text-sm text-gray-500 mb-8">Selecciona un año para ver el desglose detallado de ventas y ganancias mes a mes en la tabla inferior.</p>
-                            
+
                             <div className="grid gap-8 md:grid-cols-2">
                                 {annualGrowth?.map((yearData: any) => {
                                     const isSelected = selectedYear === yearData.year;
@@ -795,11 +795,10 @@ export default function ReportsPage() {
                                         <div
                                             key={yearData.year}
                                             onClick={() => setSelectedYear(yearData.year)}
-                                            className={`p-6 rounded-3xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] hover:shadow-lg border-2 ${
-                                                isSelected
-                                                    ? "bg-indigo-50/80 dark:bg-indigo-900/30 border-indigo-500 shadow-md ring-2 ring-indigo-500/10"
-                                                    : "bg-gray-50/50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700"
-                                            }`}
+                                            className={`p-6 rounded-3xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] hover:shadow-lg border-2 ${isSelected
+                                                ? "bg-indigo-50/80 dark:bg-indigo-900/30 border-indigo-500 shadow-md ring-2 ring-indigo-500/10"
+                                                : "bg-gray-50/50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700"
+                                                }`}
                                         >
                                             <div className="flex justify-between items-center mb-6 border-b border-indigo-100 dark:border-indigo-900/40 pb-2">
                                                 <h4 className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{yearData.year}</h4>
@@ -809,7 +808,7 @@ export default function ReportsPage() {
                                                     </span>
                                                 )}
                                             </div>
-                                            
+
                                             <div className="space-y-6">
                                                 {/* Sección Ventas (Ingresos) */}
                                                 <div>
@@ -870,7 +869,7 @@ export default function ReportsPage() {
                                     Exportar PDF Mensual
                                 </button>
                             </div>
-                            
+
                             {isLoadingMonthly ? (
                                 <div className="flex flex-col items-center justify-center py-10">
                                     <Loader2 className="h-8 w-8 text-indigo-500 animate-spin mb-2" />

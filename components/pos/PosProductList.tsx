@@ -72,10 +72,10 @@ export function PosProductList({
                                             <Package className="h-3.5 w-3.5 text-gray-400" />
                                         </div>
                                         <div className="min-w-0 overflow-hidden">
-                                            <p className="truncate text-xs font-medium text-gray-900 dark:text-white sm:text-sm">
+                                            <p className="wrap-break-words text-xs font-medium text-gray-900 dark:text-white sm:text-sm">
                                                 {product.name}
                                             </p>
-                                            <p className="truncate text-[10px] text-gray-400 font-mono">
+                                            <p className="truncate text-[14px] text-gray-400 font-mono">
                                                 {product.barcode}
                                             </p>
                                         </div>
@@ -90,7 +90,7 @@ export function PosProductList({
                                             ${Number(product.price_usd).toFixed(2)}
                                         </span>
                                         {hasOffer && (
-                                            <span className="block truncate text-[10px] font-semibold text-orange-600 dark:text-orange-400">
+                                            <span className="block truncate text-[14px] font-semibold text-orange-600 dark:text-orange-400">
                                                 ${Number(product.offer_price_usd).toFixed(2)}
                                             </span>
                                         )}
@@ -108,7 +108,7 @@ export function PosProductList({
                                             <button
                                                 type="button"
                                                 onClick={() => setImageProduct(product)}
-                                                className="cursor-pointer rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-gray-800"
+                                                className="cursor-pointer rounded-md bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-all"
                                                 title="Ver imagen"
                                             >
                                                 <ImageIcon className="h-3.5 w-3.5" />
@@ -117,7 +117,7 @@ export function PosProductList({
                                         <button
                                             type="button"
                                             onClick={() => onViewDetail(product)}
-                                            className="cursor-pointer rounded-md p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20"
+                                            className="cursor-pointer rounded-md bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-all"
                                             title="Ver detalle"
                                         >
                                             <Eye className="h-3.5 w-3.5" />
@@ -126,7 +126,7 @@ export function PosProductList({
                                             <button
                                                 type="button"
                                                 onClick={() => onAdd(product, "offer")}
-                                                className="cursor-pointer rounded-md p-1.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                                                className="cursor-pointer rounded-md bg-orange-600 p-1.5 text-white hover:bg-orange-700 transition-all"
                                                 title="Agregar en oferta"
                                             >
                                                 <Tag className="h-3.5 w-3.5" />
@@ -135,7 +135,7 @@ export function PosProductList({
                                         <button
                                             type="button"
                                             onClick={() => onAdd(product, "normal")}
-                                            className="cursor-pointer rounded-md bg-indigo-600 p-1.5 text-white hover:bg-indigo-700"
+                                            className="cursor-pointer rounded-md bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 transition-all"
                                             title="Agregar al carrito"
                                         >
                                             <Plus className="h-3.5 w-3.5" />
@@ -150,7 +150,7 @@ export function PosProductList({
 
             {imageProduct?.image_url && (
                 <div
-                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+                    className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
                     onClick={() => setImageProduct(null)}
                 >
                     <div

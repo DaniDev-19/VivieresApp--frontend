@@ -210,7 +210,7 @@ export default function InventoryPage() {
                                                     )}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="truncate max-w-[200px]">{product.name}</span>
+                                                    <span className="wrap-break-words max-w-[200px]">{product.name}</span>
                                                     <span className="text-xs text-gray-400">{product.barcode}</span>
                                                 </div>
                                             </div>

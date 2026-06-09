@@ -258,6 +258,17 @@ export default function POSPage() {
         if (cart.length === 0) return;
         setIsProcessing(true);
 
+        // 1. Validar si la moneda seleccionada es USD
+        const isUSD = displayCurrency === 'USD';
+
+        // 2. Calcular la tasa de cambio actual para la moneda seleccionada
+        const currentRate = rates[displayCurrency as keyof ExchangeRates] || 1.0;
+
+        // 3. Modificar el monto del pago: Si es USD, NO sumamos el IVA al total convertido
+        const finalPaymentAmount = isUSD
+            ? totalUSD() + (hasDelivery ? deliveryAmount : 0) // Sin IVA
+            : totalConverted() + (hasDelivery ? deliveryAmount * currentRate : 0); // Con IVA 
+
         const payload = {
             items: cart.map(item => ({
                 product_id: item.product_id,
@@ -266,13 +277,13 @@ export default function POSPage() {
             })),
             payments: [
                 {
-                    method: displayCurrency === 'USD' ? 'Efectivo_USD' :
+                    method: isUSD ? 'Efectivo_USD' :
                         displayCurrency === 'COP' ? 'Efectivo_COP' :
                             displayCurrency === 'BCV' ? 'Efectivo_BS' : 'Binance',
-                    amount: totalConverted() + (hasDelivery ? deliveryAmount * (rates[displayCurrency as keyof ExchangeRates] || 1) : 0),
+                    amount: finalPaymentAmount,
                     currency: displayCurrency === 'COP' ? 'COP' :
-                        displayCurrency === 'USD' ? 'USD' : 'VES',
-                    exchange_rate: displayCurrency === 'USD' ? 1.0 : (rates[displayCurrency as keyof ExchangeRates] || 1.0)
+                        isUSD ? 'USD' : 'VES',
+                    exchange_rate: isUSD ? 1.0 : currentRate
                 }
             ],
             customer_id: selectedCustomer?.id || 0,
@@ -462,7 +473,7 @@ export default function POSPage() {
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                        <h4 className="font-medium text-sm text-gray-900 dark:text-white wrap-break-words leading-snug" title={item.name}>{item.name}</h4>
+                                        <h4 className="font-medium text-xs text-gray-900 dark:text-white wrap-break-words leading-snug" title={item.name}>{item.name}</h4>
                                         {item.offer_price_usd != null && item.offer_price_usd > 0 && (
                                             <select
                                                 value={item.priceType || "normal"}
@@ -543,9 +554,12 @@ export default function POSPage() {
                             <span className="text-gray-500">Subtotal</span>
                             <span>{formatCurrency(totalUSD())}</span>
                         </div>
+
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Impuestos (IVA)</span>
-                            <span>{formatCurrency(totalTax())}</span>
+                            <span>
+                                {displayCurrency === 'USD' ? formatCurrency(0) : formatCurrency(totalTax())}
+                            </span>
                         </div>
 
                         {/* Delivery Section */}
@@ -587,8 +601,15 @@ export default function POSPage() {
 
                         <div className="flex justify-between items-baseline text-xl font-bold text-indigo-600 dark:text-indigo-400 pt-2 border-t border-gray-200 dark:border-gray-700">
                             <span className="text-gray-900 dark:text-white text-sm">Total USD</span>
-                            <span>{formatCurrency(totalUSD() + totalTax() + (hasDelivery ? deliveryAmount : 0))}</span>
+                            <span>
+                                {formatCurrency(
+                                    totalUSD() +
+                                    (displayCurrency === 'USD' ? 0 : totalTax()) +
+                                    (hasDelivery ? deliveryAmount : 0)
+                                )}
+                            </span>
                         </div>
+
                         {displayCurrency !== 'USD' && (
                             <div className="flex justify-between items-baseline text-2xl font-black text-green-600 dark:text-green-400">
                                 <span className="text-xs uppercase tracking-widest">{displayCurrency}</span>
