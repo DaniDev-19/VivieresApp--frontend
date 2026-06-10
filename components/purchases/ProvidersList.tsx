@@ -135,7 +135,7 @@ export function ProvidersList() {
             toast.error("No se encontró contacto registrado.");
             return;
         }
-        window.open(formatWhatsAppLink(phone, "Hola, te contacto desde Viveres App."), '_blank');
+        window.open(formatWhatsAppLink(phone, `Hola, te contacto desde ${process.env.NEXT_PUBLIC_BUSINESS_NAME || 'Viveres App'}.`), '_blank');
     };
 
     return (

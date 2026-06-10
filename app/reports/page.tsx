@@ -13,7 +13,8 @@ import {
     Trash2,
     Trophy,
     TrendingDown,
-    ArrowUpRight
+    ArrowUpRight,
+    RotateCcw
 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -47,6 +48,37 @@ export default function ReportsPage() {
     const [rankingsDateEnd, setRankingsDateEnd] = useState("");
     const [exportingRankings, setExportingRankings] = useState(false);
 
+    // Returns/Exchanges Report State
+    const [reStartDate, setReStartDate] = useState("");
+    const [reEndDate, setReEndDate] = useState("");
+    const [loadingReturnsReport, setLoadingReturnsReport] = useState(false);
+
+    // Profitability Report State
+    const [profitStartDate, setProfitStartDate] = useState("");
+    const [profitEndDate, setProfitEndDate] = useState("");
+    const [loadingProfitability, setLoadingProfitability] = useState(false);
+
+    const downloadProfitabilityReport = async (format: "pdf" | "excel") => {
+        try {
+            setLoadingProfitability(true);
+            const params: any = { format };
+            if (profitStartDate) params.start_date = profitStartDate;
+            if (profitEndDate) params.end_date = profitEndDate;
+
+            const response = await api.get("/reports/profitability/export", {
+                params,
+                responseType: "blob",
+            });
+            triggerOpenOrDownload(response.data, `Reporte_Rentabilidad`);
+            toast.success(`Reporte de rentabilidad (${format.toUpperCase()}) generado con éxito`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al generar el reporte de rentabilidad");
+        } finally {
+            setLoadingProfitability(false);
+        }
+    };
+
     const handleExportRankings = async () => {
         try {
             setExportingRankings(true);
@@ -60,8 +92,8 @@ export default function ReportsPage() {
             }
 
             const res = await api.get(url, { responseType: 'blob' });
-            const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-            window.open(blobUrl, '_blank');
+            const blob = new Blob([res.data], { type: 'application/pdf' });
+            triggerOpenOrDownload(blob, "Reporte_Rankings");
             toast.success("Reporte de Rankings abierto en nueva pestaña");
         } catch (error) {
             console.error(error);
@@ -82,8 +114,8 @@ export default function ReportsPage() {
                 params: { year: selectedYear },
                 responseType: 'blob'
             });
-            const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-            window.open(blobUrl, '_blank');
+            const blob = new Blob([res.data], { type: 'application/pdf' });
+            triggerOpenOrDownload(blob, `Reporte_Crecimiento_${selectedYear}`);
             toast.success(`Reporte mensual del año ${selectedYear} abierto en nueva pestaña`);
         } catch (error) {
             console.error(error);
@@ -168,17 +200,17 @@ export default function ReportsPage() {
 
     const triggerOpenOrDownload = (blob: Blob, filenamePrefix: string) => {
         const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
         if (blob.type.includes("pdf")) {
-            window.open(url, "_blank");
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
         } else {
-            const link = document.createElement("a");
-            link.href = url;
-            const ext = "xlsx";
-            link.setAttribute("download", `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.${ext}`);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode?.removeChild(link);
+            link.setAttribute("download", `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const downloadSalesReport = async (format: "pdf" | "excel") => {
@@ -383,14 +415,183 @@ export default function ReportsPage() {
                                 </p>
                             </div>
 
-                            <button
-                                onClick={downloadCashCloseReport}
-                                disabled={loadingCashClose}
-                                className="inline-flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30 disabled:opacity-50 transition-colors"
-                            >
-                                {loadingCashClose ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-                                Generar Cierre de Caja (PDF)
-                            </button>
+                            <div className="flex flex-wrap gap-3">
+                                <button
+                                    onClick={downloadCashCloseReport}
+                                    disabled={loadingCashClose}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingCashClose ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                    Descargar PDF
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            setLoadingCashClose(true);
+                                            const response = await api.get("/reports/cash-close", {
+                                                params: { date_str: cashCloseDate, format: "excel" },
+                                                responseType: "blob",
+                                            });
+                                            triggerOpenOrDownload(response.data, `Cierre_Caja_${cashCloseDate}`);
+                                            toast.success("Cierre de caja Excel descargado");
+                                        } catch (error) {
+                                            console.error(error);
+                                            toast.error("Error al generar el cierre de caja");
+                                        } finally {
+                                            setLoadingCashClose(false);
+                                        }
+                                    }}
+                                    disabled={loadingCashClose}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingCashClose ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                                    Descargar Excel
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Reporte de Devoluciones y Cambios */}
+                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:col-span-2">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                    <RotateCcw className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Reporte de Devoluciones y Cambios</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Impacto financiero de devoluciones y cambios realizados</p>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2 mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
+                                    <input
+                                        type="date"
+                                        value={reStartDate}
+                                        onChange={(e) => setReStartDate(e.target.value)}
+                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
+                                    <input
+                                        type="date"
+                                        value={reEndDate}
+                                        onChange={(e) => setReEndDate(e.target.value)}
+                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+                                Genera un reporte con el resumen financiero de pérdidas por devoluciones, detalle de cada devolución con su método de reembolso, y el registro de cambios con las diferencias monetarias.
+                            </p>
+
+                            <div className="flex flex-wrap gap-3">
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            setLoadingReturnsReport(true);
+                                            const params: any = { format: "pdf" };
+                                            if (reStartDate) params.start_date = reStartDate;
+                                            if (reEndDate) params.end_date = reEndDate;
+                                            const response = await api.get("/reports/returns-exchanges/export", { params, responseType: "blob" });
+                                            triggerOpenOrDownload(response.data, "Reporte_Devoluciones_Cambios");
+                                            toast.success("Reporte PDF abierto en nueva pestaña");
+                                        } catch (error) {
+                                            console.error(error);
+                                            toast.error("Error al generar el reporte");
+                                        } finally {
+                                            setLoadingReturnsReport(false);
+                                        }
+                                    }}
+                                    disabled={loadingReturnsReport}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingReturnsReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    Descargar PDF
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            setLoadingReturnsReport(true);
+                                            const params: any = { format: "excel" };
+                                            if (reStartDate) params.start_date = reStartDate;
+                                            if (reEndDate) params.end_date = reEndDate;
+                                            const response = await api.get("/reports/returns-exchanges/export", { params, responseType: "blob" });
+                                            triggerOpenOrDownload(response.data, "Reporte_Devoluciones_Cambios");
+                                            toast.success("Reporte Excel descargado");
+                                        } catch (error) {
+                                            console.error(error);
+                                            toast.error("Error al generar el reporte");
+                                        } finally {
+                                            setLoadingReturnsReport(false);
+                                        }
+                                    }}
+                                    disabled={loadingReturnsReport}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingReturnsReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                                    Descargar Excel
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Reporte de Rentabilidad de Productos */}
+                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:col-span-2">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                    <ArrowUpRight className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Reporte de Rentabilidad y Desempeño de Productos</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Análisis de márgenes de ganancia, costos y volumen de ventas</p>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2 mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
+                                    <input
+                                        type="date"
+                                        value={profitStartDate}
+                                        onChange={(e) => setProfitStartDate(e.target.value)}
+                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
+                                    <input
+                                        type="date"
+                                        value={profitEndDate}
+                                        onChange={(e) => setProfitEndDate(e.target.value)}
+                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+                                Genera un reporte detallado que calcula el margen bruto de cada producto comparando su precio de costo contra el precio de venta real, ordenado por rentabilidad neta.
+                            </p>
+
+                            <div className="flex flex-wrap gap-3">
+                                <button
+                                    onClick={() => downloadProfitabilityReport("pdf")}
+                                    disabled={loadingProfitability}
+                                    className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingProfitability ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    Descargar PDF
+                                </button>
+                                <button
+                                    onClick={() => downloadProfitabilityReport("excel")}
+                                    disabled={loadingProfitability}
+                                    className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
+                                >
+                                    {loadingProfitability ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                                    Descargar Excel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -423,6 +624,16 @@ export default function ReportsPage() {
                                             className="text-indigo-600 focus:ring-indigo-500"
                                         />
                                         <span className="text-sm">Solo Bajo Stock</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="invFilter"
+                                            checked={inventoryFilter === 'zero_stock'}
+                                            onChange={() => setInventoryFilter('zero_stock')}
+                                            className="text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-sm">Stock en 0</span>
                                     </label>
                                 </div>
                             </div>

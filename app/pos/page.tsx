@@ -194,6 +194,8 @@ export default function POSPage() {
             return await api.post("/sales/", data);
         },
         onSuccess: (response) => {
+            toast.dismiss("sale-processing");
+
             // Enriquecer datos de la venta para el ticket
             const saleData = response.data;
             // Mezclar nombre y código del producto desde el carrito
@@ -218,12 +220,15 @@ export default function POSPage() {
             setCompletedSale(enrichedSale);
             queryClient.invalidateQueries({ queryKey: ["products"] });
             queryClient.invalidateQueries({ queryKey: ["pos-products"] });
+            queryClient.invalidateQueries({ queryKey: ["sales"] });
+            queryClient.invalidateQueries({ queryKey: ["sales-stats"] });
             toast.success("¡Venta procesada con éxito!", {
                 description: "La transacción ha sido registrada en el sistema.",
                 duration: 4000,
             });
         },
         onError: (err: any) => {
+            toast.dismiss("sale-processing");
             let errorMessage = "Error desconocido";
 
 
@@ -248,6 +253,7 @@ export default function POSPage() {
             });
         },
         onSettled: () => {
+            toast.dismiss("sale-processing");
             setIsProcessing(false);
             setHasDelivery(false);
             setDeliveryAmount(0);
@@ -257,6 +263,7 @@ export default function POSPage() {
     const handleCheckout = () => {
         if (cart.length === 0) return;
         setIsProcessing(true);
+        toast.loading("Procesando venta... Por favor espera unos segundos", { id: "sale-processing" });
 
         // 1. Validar si la moneda seleccionada es USD
         const isUSD = displayCurrency === 'USD';

@@ -125,7 +125,7 @@ export default function CustomersPage() {
 
     const handleWhatsApp = (phone: string) => {
         if (!phone) return;
-        window.open(formatWhatsAppLink(phone, "Hola, te contacto desde Viveres App."), '_blank');
+        window.open(formatWhatsAppLink(phone, `Hola, te contacto desde ${process.env.NEXT_PUBLIC_BUSINESS_NAME || 'Viveres App'}.`), '_blank');
     };
 
     const handleCreate = () => {
@@ -240,21 +240,21 @@ export default function CustomersPage() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => handleWhatsApp(customer.phone)}
-                                                    className="rounded-lg p-2 text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-500 dark:hover:bg-green-900/20"
+                                                    className="cursor-pointer rounded-lg p-2 text-green-600 hover:bg-green-50 hover:text-green-700 dark:text-green-500 dark:hover:bg-green-900/20"
                                                     title="Contactar por WhatsApp"
                                                 >
                                                     <MessageCircle className="h-4 w-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleEdit(customer)}
-                                                    className="rounded-lg p-2 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-500 dark:hover:bg-indigo-900/20"
+                                                    className="cursor-pointer rounded-lg p-2 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-500 dark:hover:bg-indigo-900/20"
                                                     title="Editar cliente"
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteClick(customer.id)}
-                                                    className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20"
+                                                    className="cursor-pointer rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20"
                                                     title="Eliminar cliente"
                                                 >
                                                     <Trash2 className="h-4 w-4" />

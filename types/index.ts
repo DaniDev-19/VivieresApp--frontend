@@ -57,6 +57,29 @@ export interface Rate {
     updated_at: string;
 }
 
+export interface User {
+    id: number;
+    username: string;
+    full_name?: string;
+}
+
+export interface Delivery {
+    id: number;
+    description: string;
+    address?: string;
+    items_detail?: string;
+    cost_usd?: number | null;
+    status: string;
+    delivery_user_id?: number | null;
+    provider_id?: number | null;
+    sale_id?: number | null;
+    created_at: string;
+    updated_at: string;
+    completed_at?: string | null;
+    delivery_user?: User | null;
+    provider?: Provider | null;
+}
+
 export interface Sale {
     id: number;
     total_amount_usd: number;
@@ -90,4 +113,47 @@ export interface WebOrder {
     delivery_type?: string;
     delivery_cost?: number;
     items: WebOrderItem[];
+}
+
+export interface ReturnItem {
+    product_id: number;
+    product_name: string;
+    barcode?: string;
+    quantity: number;
+    unit_price_usd: number;
+    subtotal_usd: number;
+}
+
+export interface Return {
+    id: number;
+    sale_id: number;
+    total_refund_usd: number;
+    refund_method: string;
+    credit_note_code?: string;
+    reason?: string;
+    status: string;
+    items: ReturnItem[];
+    created_at: string;
+}
+
+export interface ExchangeItem {
+    product_id: number;
+    product_name: string;
+    barcode?: string;
+    quantity: number;
+    unit_price_usd: number;
+    subtotal_usd: number;
+}
+
+export interface Exchange {
+    id: number;
+    sale_id: number;
+    total_difference_usd: number;
+    payment_method?: string;
+    payment_amount_usd: number;
+    reason?: string;
+    status: string;
+    items_out: ExchangeItem[];
+    items_in: ExchangeItem[];
+    created_at: string;
 }

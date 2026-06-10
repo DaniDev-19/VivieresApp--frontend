@@ -293,7 +293,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
                             return (
                                 <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
                                     <div className="flex w-full justify-between">
-                                        <span className="w-[45%] text-left truncate pr-1 font-medium">{item.name || `Item #${item.product_id}`}</span>
+                                        <span className="w-[45%] text-left wrap-break-word pr-1 font-medium">{item.name || `Item #${item.product_id}`}</span>
                                         <span className="w-[10%] text-center">{item.quantity}</span>
                                         <span className="w-[45%] text-right font-bold">${itemTotal.toFixed(2)}</span>
                                     </div>

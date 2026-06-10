@@ -9,7 +9,9 @@ import {
     ShoppingCart,
     TrendingUp,
     AlertTriangle,
-    Users
+    Users,
+    RotateCcw,
+    RefreshCw
 } from "lucide-react";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { formatCurrency } from "@/lib/utils";
@@ -66,7 +68,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <StatsCard
                     title="Ventas Hoy"
                     value={isLoadingStats ? "..." : formatCurrency(stats?.revenue_today || 0)}
@@ -86,12 +88,25 @@ export default function DashboardPage() {
                     icon={TrendingUp}
                     subtext="Actualizado hoy"
                 />
-                {/* Placeholder for now */}
                 <StatsCard
                     title="Total Clientes"
                     value={isLoadingStats ? "..." : stats?.total_customers || 0}
                     icon={Users}
                     subtext="Registrados"
+                />
+                <StatsCard
+                    title="Devoluciones"
+                    value={isLoadingStats ? "..." : stats?.total_returns || 0}
+                    icon={RotateCcw}
+                    subtext="Total registradas"
+                    trend={stats?.total_returns > 0 ? "danger" : "neutral"}
+                />
+                <StatsCard
+                    title="Cambios"
+                    value={isLoadingStats ? "..." : stats?.total_exchanges || 0}
+                    icon={RefreshCw}
+                    subtext="Total registrados"
+                    trend={stats?.total_exchanges > 0 ? "danger" : "neutral"}
                 />
             </div>
 
@@ -125,12 +140,7 @@ export default function DashboardPage() {
                         ) : stats?.recent_sales?.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-400">Sin ventas hoy</div>
                         ) : (
-                            stats?.recent_sales?.filter((sale: any) => {
-                                const saleDate = new Date(sale.created_at);
-                                const oneDayAgo = new Date();
-                                oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-                                return saleDate >= oneDayAgo;
-                            }).map((sale: any) => (
+                            stats?.recent_sales?.map((sale: any) => (
                                 <div key={sale.id} className="flex items-center justify-between rounded-lg border border-gray-50 bg-gray-50/50 p-3 dark:border-gray-800 dark:bg-gray-800/50">
                                     <div className="flex items-center gap-3">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
@@ -141,15 +151,14 @@ export default function DashboardPage() {
                                                 Venta #{sale.id}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(sale.created_at).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                                             +{formatCurrency(sale.total_amount_usd)}
                                         </p>
-                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">{sale.status}</span>
                                     </div>
                                 </div>
                             ))

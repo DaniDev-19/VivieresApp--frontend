@@ -99,6 +99,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["products"] });
+            toast.success(product?.id ? "Producto actualizado correctamente" : "Producto creado correctamente");
             onSuccess();
         },
         onError: (err: any) => {
@@ -202,10 +203,15 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                             <input
                                 type="number"
                                 step="0.01"
-                                min="0"
-                                required
-                                value={formData.cost_price || ""}
-                                onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) || 0 })}
+                                    min="0"
+                                    required
+                                    value={formData.cost_price || ""}
+                                    onChange={(e) => {
+                                        const raw = parseFloat(e.target.value);
+                                        const parsed = isNaN(raw) ? 0 : raw;
+                                        const normalized = parsed > 0 && parsed < 1 ? 1 : Math.max(0, parsed);
+                                        setFormData({ ...formData, cost_price: normalized });
+                                    }}
                                 className="w-full rounded-lg border border-gray-200 bg-white p-2.5 pl-7 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
                             />
                         </div>
@@ -257,14 +263,17 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                             <input
                                 type="number"
                                 step="0.01"
-                                min="0"
-                                value={formData.offer_price_usd ?? ""}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        offer_price_usd: e.target.value ? parseFloat(e.target.value) : null,
-                                    })
-                                }
+                                    min="0"
+                                    value={formData.offer_price_usd ?? ""}
+                                    onChange={(e) => {
+                                        const raw = e.target.value;
+                                        const parsed = raw ? parseFloat(raw) : null;
+                                        const normalized = parsed == null ? null : (parsed > 0 && parsed < 1 ? 1 : Math.max(0, parsed));
+                                        setFormData({
+                                            ...formData,
+                                            offer_price_usd: normalized,
+                                        });
+                                    }}
                                 className="w-full rounded-lg border border-orange-200 bg-orange-50/50 p-2.5 pl-7 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:border-orange-800 dark:bg-orange-900/10 dark:text-white"
                                 placeholder="Opcional — precio fijo sin margen"
                             />
@@ -336,7 +345,10 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                                 type="number"
                                 min="0"
                                 value={formData.stock_quantity ?? 0}
-                                onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) || 0 })}
+                                onChange={(e) => setFormData({
+                                    ...formData,
+                                    stock_quantity: Math.max(0, parseInt(e.target.value) || 0),
+                                })}
                                 className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
                             />
                         </div>
@@ -348,7 +360,10 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                                 type="number"
                                 min="0"
                                 value={formData.min_stock_level ?? 0}
-                                onChange={(e) => setFormData({ ...formData, min_stock_level: parseInt(e.target.value) || 0 })}
+                                onChange={(e) => setFormData({
+                                    ...formData,
+                                    min_stock_level: Math.max(0, parseInt(e.target.value) || 0),
+                                })}
                                 className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
                             />
                         </div>

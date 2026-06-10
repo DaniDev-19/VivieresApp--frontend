@@ -13,7 +13,7 @@ import {
     AlertTriangle,
     Tags,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+// import { motion, AnimatePresence } from "framer-motion";
 import { formatCurrency, getImageUrl } from "@/lib/utils";
 
 import { Modal } from "@/components/ui/Modal";
@@ -22,11 +22,11 @@ import { ProductForm } from "@/components/inventory/ProductForm";
 import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
 import { CategoryManager } from "@/components/inventory/CategoryManager";
 import { CategoryFilterSelect } from "@/components/ui/CategoryFilterSelect";
-import { useUIStore } from "@/store/uiStore";
+// import { useUIStore } from "@/store/uiStore";
 import { toast } from "sonner";
 import { Product, Category } from "@/types";
 import { Pagination } from "@/components/ui/pagination";
-
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function InventoryPage() {
     const queryClient = useQueryClient();
@@ -50,12 +50,16 @@ export default function InventoryPage() {
         },
     });
 
-    // Fetch Products
+
+    const debouncedSearch = useDebounce(search, 350);
+
+
     const { data: products, isLoading, isPlaceholderData } = useQuery<Product[]>({
-        queryKey: ["products", page, search, selectedCategory],
+
+        queryKey: ["products", page, debouncedSearch, selectedCategory],
         queryFn: async () => {
             const params = {
-                search: search || undefined,
+                search: debouncedSearch.trim() || undefined,
                 category_id: selectedCategory ?? undefined,
                 skip: (page - 1) * limit,
                 limit
@@ -85,11 +89,11 @@ export default function InventoryPage() {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             setIsDeleteModalOpen(false);
             setProductToDelete(null);
-            // toast.success("Producto eliminado correctamente");
+            toast.success("Producto eliminado correctamente");
         },
         onError: (error: any) => {
             console.error("Error deleting product:", error);
-            // toast.error("Error al eliminar el producto");
+            toast.error("Error al eliminar el producto");
         }
     });
 

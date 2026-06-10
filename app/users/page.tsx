@@ -236,7 +236,7 @@ export default function UsersPage() {
                                                 {/* Edit Button */}
                                                 <button
                                                     onClick={() => handleEdit(user)}
-                                                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                                                    className="cursor-pointer p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
                                                     title="Editar"
                                                 >
                                                     <Edit2 className="h-4 w-4" />
@@ -245,7 +245,7 @@ export default function UsersPage() {
                                                 {/* Enable/Disable Button */}
                                                 <button
                                                     onClick={() => toggleStatusMutation.mutate({ id: user.id, is_active: !user.is_active })}
-                                                    className={`p-2 rounded-lg transition-colors ${user.is_active
+                                                    className={`cursor-pointer p-2 rounded-lg transition-colors ${user.is_active
                                                         ? "text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 dark:hover:text-orange-400"
                                                         : "text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 dark:hover:text-green-400"
                                                         }`}
@@ -257,7 +257,7 @@ export default function UsersPage() {
                                                 {/* Hard Delete Button */}
                                                 <button
                                                     onClick={() => confirmDelete(user)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                                                    className="cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400"
                                                     title="Eliminar permanentemente"
                                                 >
                                                     <Trash2 className="h-4 w-4" />

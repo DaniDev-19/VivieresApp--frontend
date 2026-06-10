@@ -564,14 +564,15 @@ export function OrdersList() {
                                             {order.status !== 'completed' && (
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleReceive(order); }}
-                                                    className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md hover:bg-indigo-100 border border-indigo-200"
+                                                    className="cursor-pointer text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md hover:bg-indigo-100 border border-indigo-200"
+                                                    title="Recibir Mercancía"
                                                 >
                                                     Recibir Mercancía
                                                 </button>
                                             )}
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleWhatsApp(order); }}
-                                                className="p-1 text-green-600 hover:bg-green-50 rounded bg-white border border-transparent hover:border-green-100 transition-colors"
+                                                className="cursor-pointer p-1 text-green-600 hover:bg-green-50 rounded bg-white border border-transparent hover:border-green-100 transition-colors"
                                                 title="Descargar PDF y Enviar por WhatsApp"
                                             >
                                                 <FileText className="w-4 h-4" />
@@ -579,7 +580,7 @@ export function OrdersList() {
                                             {order.status !== 'completed' && (
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
-                                                    className="p-1 text-red-500 hover:bg-red-50 rounded bg-white border border-transparent hover:border-red-100 transition-colors"
+                                                    className="cursor-pointer p-1 text-red-500 hover:bg-red-50 rounded bg-white border border-transparent hover:border-red-100 transition-colors"
                                                     title="Eliminar orden"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
