@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { X, RefreshCw, Search, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface ExchangeModalProps {
     sale: {
@@ -36,22 +37,33 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
         product_name: string;
         quantity: number;
         unit_price_usd: number;
+        price_type: "normal" | "offer" | "custom";
+        price_usd: number;
+        offer_price_usd: number | null;
         maxQuantity: number;
     }>>([]);
 
     const [paymentMethod, setPaymentMethod] = useState("");
     const [reason, setReason] = useState("");
     const [productSearch, setProductSearch] = useState("");
+    const debouncedSearch = useDebounce(productSearch, 300);
 
     const { data: products = [] } = useQuery({
-        queryKey: ["products-for-exchange"],
+        queryKey: ["products-for-exchange", debouncedSearch],
         queryFn: async () => {
-            const { data } = await api.get("/products", { params: { limit: 500 } });
-            return data.filter((p: any) => p.stock_quantity > 0);
+            const { data } = await api.get("/products", {
+                params: {
+                    search: debouncedSearch || undefined,
+                    in_stock_only: true,
+                    limit: 50,
+                },
+            });
+            return data;
         },
     });
 
     const filteredProducts = products.filter((p: any) => {
+        if (!productSearch) return true;
         const q = productSearch.toLowerCase();
         return p.name.toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q);
     });
@@ -72,6 +84,7 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                 items_in: itemsIn.map((i) => ({
                     product_id: i.product_id,
                     quantity: i.quantity,
+                    unit_price_usd: i.unit_price_usd,
                 })),
                 payment_method: difference > 0 ? (paymentMethod || undefined) : undefined,
                 reason: reason || undefined,
@@ -109,6 +122,9 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                 product_name: product.name,
                 quantity: 1,
                 unit_price_usd: product.price_usd || 0,
+                price_type: "normal",
+                price_usd: product.price_usd || 0,
+                offer_price_usd: product.offer_price_usd ?? null,
                 maxQuantity: product.stock_quantity,
             },
         ]);
@@ -119,6 +135,37 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
             prev.map((item) =>
                 item.product_id === productId
                     ? { ...item, quantity: Math.max(0, Math.min(value, item.maxQuantity)) }
+                    : item
+            )
+        );
+    };
+
+    const handleInPriceType = (productId: number, priceType: "normal" | "offer" | "custom") => {
+        setItemsIn((prev) =>
+            prev.map((item) => {
+                if (item.product_id !== productId) return item;
+                const unit_price_usd =
+                    priceType === "offer"
+                        ? item.offer_price_usd ?? item.price_usd
+                        : item.price_usd;
+                return {
+                    ...item,
+                    price_type: priceType,
+                    unit_price_usd,
+                };
+            })
+        );
+    };
+
+    const handleInUnitPrice = (productId: number, value: number) => {
+        setItemsIn((prev) =>
+            prev.map((item) =>
+                item.product_id === productId
+                    ? {
+                          ...item,
+                          unit_price_usd: Math.max(0, value),
+                          price_type: "custom",
+                      }
                     : item
             )
         );
@@ -142,7 +189,11 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                             <p className="text-xs text-gray-500 dark:text-gray-400">Venta #{sale.id.toString().padStart(6, "0")}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <button
+                        onClick={onClose}
+                        aria-label="Cerrar modal"
+                        className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
                         <X className="h-5 w-5" />
                     </button>
                 </div>
@@ -165,6 +216,7 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => handleOutQty(item.product_id, item.quantity - 1)}
+                                            aria-label="Disminuir cantidad devuelta"
                                             disabled={item.quantity === 0}
                                             className="w-7 h-7 rounded-lg bg-red-200 dark:bg-red-800/50 text-red-700 dark:text-red-300 font-bold hover:bg-red-300 dark:hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                                         >
@@ -175,11 +227,13 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                                             min={0}
                                             max={item.maxQuantity}
                                             value={item.quantity}
+                                            aria-label="Cantidad devuelta"
                                             onChange={(e) => handleOutQty(item.product_id, parseInt(e.target.value) || 0)}
                                             className="w-12 text-center rounded-lg border border-red-300 dark:border-red-800 bg-white dark:bg-gray-800 dark:text-white p-1 text-sm font-bold outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                                         />
                                         <button
                                             onClick={() => handleOutQty(item.product_id, item.quantity + 1)}
+                                            aria-label="Aumentar cantidad devuelta"
                                             disabled={item.quantity >= item.maxQuantity}
                                             className="w-7 h-7 rounded-lg bg-red-200 dark:bg-red-800/50 text-red-700 dark:text-red-300 font-bold hover:bg-red-300 dark:hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                                         >
@@ -205,6 +259,7 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <input
                                 type="text"
+                                aria-label="Buscar producto"
                                 placeholder="Buscar producto por nombre o código..."
                                 value={productSearch}
                                 onChange={(e) => setProductSearch(e.target.value)}
@@ -250,11 +305,37 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                                     <div key={item.product_id} className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/15 rounded-xl border border-green-100 dark:border-green-900/30">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.product_name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">${item.unit_price_usd.toFixed(2)} c/u</p>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">${item.unit_price_usd.toFixed(2)} c/u</span>
+                                                <select
+                                                    aria-label="Tipo de precio"
+                                                    value={item.price_type}
+                                                    onChange={(e) => handleInPriceType(item.product_id, e.target.value as "normal" | "offer" | "custom")}
+                                                    className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white text-xs p-1 outline-none"
+                                                >
+                                                    <option value="normal">Precio normal</option>
+                                                    {item.offer_price_usd !== null && (
+                                                        <option value="offer">Precio oferta</option>
+                                                    )}
+                                                    <option value="custom">Precio manual</option>
+                                                </select>
+                                            </div>
+                                            {item.price_type === "custom" && (
+                                                <input
+                                                    aria-label="Precio unitario personalizado"
+                                                    type="number"
+                                                    min={0}
+                                                    step={0.01}
+                                                    value={item.unit_price_usd}
+                                                    onChange={(e) => handleInUnitPrice(item.product_id, parseFloat(e.target.value) || 0)}
+                                                    className="mt-2 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white p-2 text-sm outline-none"
+                                                />
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => handleInQty(item.product_id, item.quantity - 1)}
+                                                aria-label="Disminuir cantidad recibida"
                                                 disabled={item.quantity <= 1}
                                                 className="w-7 h-7 rounded-lg bg-green-200 dark:bg-green-800/50 text-green-700 dark:text-green-300 font-bold hover:bg-green-300 dark:hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                                             >
@@ -265,11 +346,13 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                                                 min={1}
                                                 max={item.maxQuantity}
                                                 value={item.quantity}
+                                                aria-label="Cantidad recibida"
                                                 onChange={(e) => handleInQty(item.product_id, parseInt(e.target.value) || 1)}
                                                 className="w-12 text-center rounded-lg border border-green-300 dark:border-green-800 bg-white dark:bg-gray-800 dark:text-white p-1 text-sm font-bold outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
                                             />
                                             <button
                                                 onClick={() => handleInQty(item.product_id, item.quantity + 1)}
+                                                aria-label="Aumentar cantidad recibida"
                                                 disabled={item.quantity >= item.maxQuantity}
                                                 className="w-7 h-7 rounded-lg bg-green-200 dark:bg-green-800/50 text-green-700 dark:text-green-300 font-bold hover:bg-green-300 dark:hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                                             >
@@ -277,6 +360,7 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                                             </button>
                                             <button
                                                 onClick={() => removeProductIn(item.product_id)}
+                                                aria-label="Eliminar producto recibido"
                                                 className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center justify-center"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
@@ -308,6 +392,7 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Método de pago (diferencia)</label>
                             <select
+                                aria-label="Método de pago"
                                 value={paymentMethod}
                                 onChange={(e) => setPaymentMethod(e.target.value)}
                                 className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white p-3 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
