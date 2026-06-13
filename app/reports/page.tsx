@@ -19,6 +19,13 @@ import {
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function ReportsPage() {
     const [activeTab, setActiveTab] = useState("sales");
@@ -34,6 +41,7 @@ export default function ReportsPage() {
 
     // Inventory State
     const [inventoryFilter, setInventoryFilter] = useState("all");
+    const [inventoryProviderId, setInventoryProviderId] = useState<string>("all");
     const [loadingInventory, setLoadingInventory] = useState(false);
     const [loadingLowStockRep, setLoadingLowStockRep] = useState(false);
     const [inventoryReportType, setInventoryReportType] = useState("standard");
@@ -53,7 +61,33 @@ export default function ReportsPage() {
     const [reEndDate, setReEndDate] = useState("");
     const [loadingReturnsReport, setLoadingReturnsReport] = useState(false);
 
-    // Profitability Report State
+    // Web Orders Report State
+    const [webStartDate, setWebStartDate] = useState("");
+    const [webEndDate, setWebEndDate] = useState("");
+    const [loadingWebOrders, setLoadingWebOrders] = useState(false);
+
+    const downloadWebOrdersReport = async (format: "pdf" | "excel") => {
+        try {
+            setLoadingWebOrders(true);
+            const params: any = { format };
+            if (webStartDate) params.start_date = webStartDate;
+            if (webEndDate) params.end_date = webEndDate;
+
+            const response = await api.get("/reports/web-orders/export", {
+                params,
+                responseType: "blob",
+            });
+            triggerOpenOrDownload(response.data, `Reporte_Pedidos_Web`);
+            toast.success(`Reporte de pedidos web (${format.toUpperCase()}) generado con éxito`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al generar el reporte de pedidos web");
+        } finally {
+            setLoadingWebOrders(false);
+        }
+    };
+
+    // Profitability Report State (Used in the Sales tab grid)
     const [profitStartDate, setProfitStartDate] = useState("");
     const [profitEndDate, setProfitEndDate] = useState("");
     const [loadingProfitability, setLoadingProfitability] = useState(false);
@@ -76,6 +110,55 @@ export default function ReportsPage() {
             toast.error("Error al generar el reporte de rentabilidad");
         } finally {
             setLoadingProfitability(false);
+        }
+    };
+
+    // Deliveries Report State
+    const [delivStartDate, setDelivStartDate] = useState("");
+    const [delivEndDate, setDelivEndDate] = useState("");
+    const [delivStatus, setDelivStatus] = useState("all");
+    const [loadingDeliveries, setLoadingDeliveries] = useState(false);
+
+    const downloadDeliveriesReport = async () => {
+        try {
+            setLoadingDeliveries(true);
+            const params: any = {};
+            if (delivStartDate) params.start_date = delivStartDate;
+            if (delivEndDate) params.end_date = delivEndDate;
+            if (delivStatus !== "all") params.status_filter = delivStatus;
+
+            const response = await api.get("/reports/deliveries", {
+                params,
+                responseType: "blob",
+            });
+            triggerOpenOrDownload(response.data, `Reporte_Deliverys`);
+            toast.success("Reporte de deliverys generado con éxito");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al generar el reporte de deliverys");
+        } finally {
+            setLoadingDeliveries(false);
+        }
+    };
+
+    const downloadReturnsReport = async (format: "pdf" | "excel") => {
+        try {
+            setLoadingReturnsReport(true);
+            const params: any = { format };
+            if (reStartDate) params.start_date = reStartDate;
+            if (reEndDate) params.end_date = reEndDate;
+
+            const response = await api.get("/reports/returns/export", {
+                params,
+                responseType: "blob",
+            });
+            triggerOpenOrDownload(response.data, `Reporte_Devoluciones`);
+            toast.success(`Reporte de devoluciones (${format.toUpperCase()}) generado con éxito`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al generar el reporte de devoluciones");
+        } finally {
+            setLoadingReturnsReport(false);
         }
     };
 
@@ -161,6 +244,13 @@ export default function ReportsPage() {
             params: { year: selectedYear }
         })).data,
         enabled: activeTab === "analytics"
+    });
+
+    const { data: providers, isLoading: isLoadingProvidersList } = useQuery({
+        queryKey: ["providers"],
+        queryFn: async () => (await api.get("/providers/")).data,
+        enabled: activeTab === "inventory",
+        staleTime: 1000 * 60 * 10,
     });
 
     const { data: providersPerformance, isLoading: isLoadingProviders } = useQuery({
@@ -272,11 +362,14 @@ export default function ReportsPage() {
     const downloadInventoryReport = async (format: "pdf" | "excel") => {
         try {
             setLoadingInventory(true);
-            const params = {
+            const params: any = {
                 filter: inventoryFilter,
                 format,
                 type: inventoryReportType,
             };
+            if (inventoryProviderId !== "all") {
+                params.provider_id = inventoryProviderId;
+            }
             const response = await api.get("/reports/inventory/export", {
                 params,
                 responseType: "blob",
@@ -322,20 +415,23 @@ export default function ReportsPage() {
             </div>
 
             {/* Tabs Navigation */}
-            <div className="border-b border-gray-200 dark:border-gray-800">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <div className="border-b border-gray-200 dark:border-gray-800 relative">
+                <nav className="-mb-px flex gap-2 overflow-x-auto custom-scrollbar pb-1 px-1" aria-label="Tabs">
                     {[
                         { id: "sales", name: "Ventas", icon: FileText },
                         { id: "inventory", name: "Inventario", icon: Package },
                         { id: "labels", name: "Etiquetas", icon: Tag },
                         { id: "rankings", name: "Rankings", icon: Trophy },
                         { id: "analytics", name: "Crecimiento", icon: ArrowUpRight },
+                        { id: "returns_exchanges", name: "Devoluciones", icon: RotateCcw },
+                        { id: "web_orders", name: "Pedidos Web", icon: Package },
+                        { id: "deliveries", name: "Gastos de Delivery", icon: TrendingDown },
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`
-                                group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium transition-colors
+                                group inline-flex min-w-[max-content] items-center border-b-2 py-4 px-1 text-sm font-medium transition-colors
                                 ${activeTab === tab.id
                                     ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
                                     : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -450,93 +546,6 @@ export default function ReportsPage() {
                             </div>
                         </div>
 
-                        {/* Reporte de Devoluciones y Cambios */}
-                        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:col-span-2">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                    <RotateCcw className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">Reporte de Devoluciones y Cambios</h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Impacto financiero de devoluciones y cambios realizados</p>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2 mb-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
-                                    <input
-                                        type="date"
-                                        value={reStartDate}
-                                        onChange={(e) => setReStartDate(e.target.value)}
-                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
-                                    <input
-                                        type="date"
-                                        value={reEndDate}
-                                        onChange={(e) => setReEndDate(e.target.value)}
-                                        className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
-                                Genera un reporte con el resumen financiero de pérdidas por devoluciones, detalle de cada devolución con su método de reembolso, y el registro de cambios con las diferencias monetarias.
-                            </p>
-
-                            <div className="flex flex-wrap gap-3">
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            setLoadingReturnsReport(true);
-                                            const params: any = { format: "pdf" };
-                                            if (reStartDate) params.start_date = reStartDate;
-                                            if (reEndDate) params.end_date = reEndDate;
-                                            const response = await api.get("/reports/returns-exchanges/export", { params, responseType: "blob" });
-                                            triggerOpenOrDownload(response.data, "Reporte_Devoluciones_Cambios");
-                                            toast.success("Reporte PDF abierto en nueva pestaña");
-                                        } catch (error) {
-                                            console.error(error);
-                                            toast.error("Error al generar el reporte");
-                                        } finally {
-                                            setLoadingReturnsReport(false);
-                                        }
-                                    }}
-                                    disabled={loadingReturnsReport}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors"
-                                >
-                                    {loadingReturnsReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                    Descargar PDF
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            setLoadingReturnsReport(true);
-                                            const params: any = { format: "excel" };
-                                            if (reStartDate) params.start_date = reStartDate;
-                                            if (reEndDate) params.end_date = reEndDate;
-                                            const response = await api.get("/reports/returns-exchanges/export", { params, responseType: "blob" });
-                                            triggerOpenOrDownload(response.data, "Reporte_Devoluciones_Cambios");
-                                            toast.success("Reporte Excel descargado");
-                                        } catch (error) {
-                                            console.error(error);
-                                            toast.error("Error al generar el reporte");
-                                        } finally {
-                                            setLoadingReturnsReport(false);
-                                        }
-                                    }}
-                                    disabled={loadingReturnsReport}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 disabled:opacity-50 transition-colors"
-                                >
-                                    {loadingReturnsReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                                    Descargar Excel
-                                </button>
-                            </div>
-                        </div>
-
                         {/* Reporte de Rentabilidad de Productos */}
                         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:col-span-2">
                             <div className="flex items-center gap-3 mb-4">
@@ -604,7 +613,7 @@ export default function ReportsPage() {
 
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por</label>
-                                <div className="flex gap-4">
+                                <div className="flex gap-4 flex-wrap">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="radio"
@@ -636,6 +645,26 @@ export default function ReportsPage() {
                                         <span className="text-sm">Stock en 0</span>
                                     </label>
                                 </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Proveedor</label>
+                                <Select
+                                    value={inventoryProviderId}
+                                    onValueChange={(value) => setInventoryProviderId(value)}
+                                >
+                                    <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                                        <SelectValue placeholder="Todos los proveedores" />
+                                    </SelectTrigger>
+                                    <SelectContent align="end" position="popper">
+                                        <SelectItem value="all">Todos los proveedores</SelectItem>
+                                        {providers?.map((provider: any) => (
+                                            <SelectItem key={provider.id} value={provider.id.toString()}>
+                                                {provider.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="mb-6">
@@ -1116,6 +1145,165 @@ export default function ReportsPage() {
                                     </table>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+                {activeTab === "returns_exchanges" && (
+                    <div className="space-y-6">
+                        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <RotateCcw className="h-5 w-5 text-indigo-500" />
+                                Reporte de Devoluciones y Cambios
+                            </h3>
+                            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+                                Exporta un informe en Excel con todas las devoluciones de dinero y cambios de productos registrados.
+                            </p>
+                            <div className="flex flex-wrap items-end gap-4">
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Desde</label>
+                                    <input
+                                        type="date"
+                                        value={reStartDate}
+                                        onChange={(e) => setReStartDate(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Hasta</label>
+                                    <input
+                                        type="date"
+                                        value={reEndDate}
+                                        onChange={(e) => setReEndDate(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-6 flex gap-3">
+                                <button
+                                    onClick={() => downloadReturnsReport('pdf')}
+                                    disabled={loadingReturnsReport}
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    {loadingReturnsReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                    Descargar PDF
+                                </button>
+                                <button
+                                    onClick={() => downloadReturnsReport('excel')}
+                                    disabled={loadingReturnsReport}
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-600 bg-white py-2.5 text-sm font-medium text-emerald-600 hover:bg-emerald-50 dark:border-emerald-500 dark:bg-transparent dark:text-emerald-500 dark:hover:bg-emerald-500/10 disabled:opacity-50 transition-colors shadow-sm"
+                                >
+                                    {loadingReturnsReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    Descargar Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {activeTab === "web_orders" && (
+                    <div className="space-y-6">
+                        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Package className="h-5 w-5 text-indigo-500" />
+                                Reporte de Pedidos Web
+                            </h3>
+                            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+                                Exporta un informe detallado con los pedidos web recibidos, su estatus, método de pago y montos totales.
+                            </p>
+                            <div className="flex flex-wrap items-end gap-4">
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Desde</label>
+                                    <input
+                                        type="date"
+                                        value={webStartDate}
+                                        onChange={(e) => setWebStartDate(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Hasta</label>
+                                    <input
+                                        type="date"
+                                        value={webEndDate}
+                                        onChange={(e) => setWebEndDate(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-6 flex gap-3">
+                                <button
+                                    onClick={() => downloadWebOrdersReport('pdf')}
+                                    disabled={loadingWebOrders}
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    {loadingWebOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                                    Descargar PDF
+                                </button>
+                                <button
+                                    onClick={() => downloadWebOrdersReport('excel')}
+                                    disabled={loadingWebOrders}
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-600 bg-white py-2.5 text-sm font-medium text-emerald-600 hover:bg-emerald-50 dark:border-emerald-500 dark:bg-transparent dark:text-emerald-500 dark:hover:bg-emerald-500/10 disabled:opacity-50 transition-colors shadow-sm"
+                                >
+                                    {loadingWebOrders ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    Descargar Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {activeTab === "deliveries" && (
+                    <div className="space-y-6">
+                        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <TrendingDown className="h-5 w-5 text-indigo-500" />
+                                Reporte de Gastos de Delivery
+                            </h3>
+                            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+                                Exporta un informe con los gastos, cantidad de viajes y estatus de los envíos realizados.
+                            </p>
+                            <div className="flex flex-wrap items-end gap-4">
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Desde</label>
+                                    <input
+                                        type="date"
+                                        value={delivStartDate}
+                                        onChange={(e) => setDelivStartDate(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Periodo Hasta</label>
+                                    <input
+                                        type="date"
+                                        value={delivEndDate}
+                                        onChange={(e) => setDelivEndDate(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-100 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-800 dark:bg-gray-800 dark:text-white transition-all"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Estatus del Viaje</label>
+                                    <Select value={delivStatus} onValueChange={setDelivStatus}>
+                                        <SelectTrigger className="w-full h-[42px] rounded-xl border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-800 text-sm">
+                                            <SelectValue placeholder="Todos" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl">
+                                            <SelectItem value="all">Todos los estados</SelectItem>
+                                            <SelectItem value="completed">Completados</SelectItem>
+                                            <SelectItem value="pending">Pendientes / En Ruta</SelectItem>
+                                            <SelectItem value="cancelled">Cancelados</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="mt-6 flex gap-3">
+                                <button
+                                    onClick={downloadDeliveriesReport}
+                                    disabled={loadingDeliveries}
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    {loadingDeliveries ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    Descargar PDF (Deliverys)
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

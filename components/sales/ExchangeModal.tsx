@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { X, RefreshCw, Search, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 interface ExchangeModalProps {
     sale: {
@@ -307,18 +308,22 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.product_name}</p>
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="text-xs text-gray-500 dark:text-gray-400">${item.unit_price_usd.toFixed(2)} c/u</span>
-                                                <select
+                                                <Select
                                                     aria-label="Tipo de precio"
                                                     value={item.price_type}
-                                                    onChange={(e) => handleInPriceType(item.product_id, e.target.value as "normal" | "offer" | "custom")}
-                                                    className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white text-xs p-1 outline-none"
+                                                    onValueChange={(value) => handleInPriceType(item.product_id, value as "normal" | "offer" | "custom")}
                                                 >
-                                                    <option value="normal">Precio normal</option>
-                                                    {item.offer_price_usd !== null && (
-                                                        <option value="offer">Precio oferta</option>
-                                                    )}
-                                                    <option value="custom">Precio manual</option>
-                                                </select>
+                                                    <SelectTrigger className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                                        <SelectValue placeholder="Tipo de precio" />
+                                                    </SelectTrigger>
+                                                    <SelectContent align="end" position="popper">
+                                                        <SelectItem value="normal">Precio normal</SelectItem>
+                                                        {item.offer_price_usd !== null && (
+                                                            <SelectItem value="offer">Precio oferta</SelectItem>
+                                                        )}
+                                                        <SelectItem value="custom">Precio manual</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                             {item.price_type === "custom" && (
                                                 <input
@@ -391,20 +396,24 @@ export function ExchangeModal({ sale, onClose, onSuccess }: ExchangeModalProps) 
                     {difference > 0 && (
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Método de pago (diferencia)</label>
-                            <select
+                            <Select
                                 aria-label="Método de pago"
-                                value={paymentMethod}
-                                onChange={(e) => setPaymentMethod(e.target.value)}
-                                className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white p-3 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                                value={paymentMethod || "none"}
+                                onValueChange={(value) => setPaymentMethod(value !== "none" ? value : "")}
                             >
-                                <option value="">Seleccionar método</option>
-                                <option value="cash">Efectivo</option>
-                                <option value="transfer">Transferencia</option>
-                                <option value="point">Punto de Venta</option>
-                                <option value="zelle">Zelle</option>
-                                <option value="pago_movil">Pago Móvil</option>
-                                <option value="paypal">PayPal</option>
-                            </select>
+                                <SelectTrigger className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:border-amber-500 focus:ring-amber-500/15">
+                                    <SelectValue placeholder="Seleccionar método" />
+                                </SelectTrigger>
+                                <SelectContent align="end" position="popper">
+                                    <SelectItem value="none">Seleccionar método</SelectItem>
+                                    <SelectItem value="cash">Efectivo</SelectItem>
+                                    <SelectItem value="transfer">Transferencia</SelectItem>
+                                    <SelectItem value="point">Punto de Venta</SelectItem>
+                                    <SelectItem value="zelle">Zelle</SelectItem>
+                                    <SelectItem value="pago_movil">Pago Móvil</SelectItem>
+                                    <SelectItem value="paypal">PayPal</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     )}
 

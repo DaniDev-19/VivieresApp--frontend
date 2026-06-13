@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { usePublicStore } from "@/store/publicStore";
 import { formatCurrency, getImageUrl, formatWhatsAppLink } from "@/lib/utils";
@@ -8,39 +8,57 @@ import { Trash2, UploadCloud, CheckCircle, Package, MapPin, CreditCard, ChevronR
 import api from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-const PAYMENT_DETAILS: Record<string, { label: string, info: string, extra?: string }> = {
-    'Pago Móvil': {
-        label: 'Datos de Pago Móvil:',
-        info: '0414-0000000 • Banco...',
-        extra: 'RIF: J-00000000-0'
-    },
-    'Zelle': {
-        label: 'Datos de Zelle:',
-        info: 'correo@ejemplo.com',
-        extra: 'Beneficiario: Nombre...'
-    },
-    'Binance': {
-        label: 'Datos de Binance Pay:',
-        info: 'ID: 00000000',
-        extra: 'Correo: usuario@binance.com'
-    },
-    'Zinli': {
-        label: 'Datos de Zinli:',
-        info: 'usuario@zinli.com',
-        extra: 'Consulte al vendedor'
-    }
-};
-
-const DELIVERY_OPTIONS = [
-    { id: 'pickup', label: 'Retiro en Tienda', fee: 0, description: 'Gratis' },
-    { id: 'std', label: 'Delivery Estándar', fee: 2, description: 'Zona cercana / Ciudad ($2.00)' },
-    { id: 'ext', label: 'Delivery Nocturno / Lejano', fee: 5, description: 'Zona extraurbana / Horario nocturno ($5.00)' },
-];
+import { WebOrderTicket } from "./WebOrderTicket";
 
 export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, onClose: () => void, bcvRate: number }) {
     const { cart, removeFromCart, updateQuantity, totalUSD, clearCart } = usePublicStore();
     const [step, setStep] = useState(1); // 1: Cart, 2: Client Info, 3: Delivery/Payment, 4: Success
+
+    // Dynamic Payment Details from .env
+    const PAYMENT_DETAILS: Record<string, { label: string, info: string, extra?: string }> = {};
+    if (process.env.NEXT_PUBLIC_PAYMENT_PAGO_MOVIL_INFO) {
+        PAYMENT_DETAILS['Pago Móvil'] = {
+            label: 'Datos de Pago Móvil:',
+            info: process.env.NEXT_PUBLIC_PAYMENT_PAGO_MOVIL_INFO,
+            extra: process.env.NEXT_PUBLIC_PAYMENT_PAGO_MOVIL_EXTRA
+        };
+    }
+    if (process.env.NEXT_PUBLIC_PAYMENT_ZELLE_INFO) {
+        PAYMENT_DETAILS['Zelle'] = {
+            label: 'Datos de Zelle:',
+            info: process.env.NEXT_PUBLIC_PAYMENT_ZELLE_INFO,
+            extra: process.env.NEXT_PUBLIC_PAYMENT_ZELLE_EXTRA
+        };
+    }
+    if (process.env.NEXT_PUBLIC_PAYMENT_BINANCE_INFO) {
+        PAYMENT_DETAILS['Binance'] = {
+            label: 'Datos de Binance Pay:',
+            info: process.env.NEXT_PUBLIC_PAYMENT_BINANCE_INFO,
+            extra: process.env.NEXT_PUBLIC_PAYMENT_BINANCE_EXTRA
+        };
+    }
+    if (process.env.NEXT_PUBLIC_PAYMENT_ZINLI_INFO) {
+        PAYMENT_DETAILS['Zinli'] = {
+            label: 'Datos de Zinli:',
+            info: process.env.NEXT_PUBLIC_PAYMENT_ZINLI_INFO,
+            extra: process.env.NEXT_PUBLIC_PAYMENT_ZINLI_EXTRA
+        };
+    }
+
+    // Dynamic Delivery Options from .env
+    const DELIVERY_OPTIONS = [
+        { id: 'pickup', label: 'Retiro en Tienda', fee: 0, description: 'Gratis' },
+    ];
+    
+    const stdFee = parseFloat(process.env.NEXT_PUBLIC_DELIVERY_STD_FEE || "2");
+    const extFee = parseFloat(process.env.NEXT_PUBLIC_DELIVERY_EXT_FEE || "5");
+    
+    if (!isNaN(stdFee)) {
+        DELIVERY_OPTIONS.push({ id: 'std', label: 'Delivery Estándar', fee: stdFee, description: `Zona cercana / Ciudad ($${stdFee.toFixed(2)})` });
+    }
+    if (!isNaN(extFee)) {
+        DELIVERY_OPTIONS.push({ id: 'ext', label: 'Delivery Nocturno / Lejano', fee: extFee, description: `Zona extraurbana / Horario nocturno ($${extFee.toFixed(2)})` });
+    }
 
     // Form Data
     const [clientData, setClientData] = useState({ name: "", cedula: "", phone: "", email: "", address: "" });
@@ -52,7 +70,22 @@ export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, o
 
 
     const [finalTotals, setFinalTotals] = useState({ usd: 0, bs: 0, fee: 0, method: '' });
+    const [completedOrder, setCompletedOrder] = useState<any>(null);
+    const [showTicket, setShowTicket] = useState(false);
     const [isLookingUp, setIsLookingUp] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setStep(1);
+            setClientData({ name: "", cedula: "", phone: "", email: "", address: "" });
+            setDeliveryMethod(DELIVERY_OPTIONS[0] || { id: 'pickup', label: 'Retiro en Tienda', fee: 0, description: 'Gratis' });
+            setSelectedMethod("");
+            setRefCode("");
+            setFile(null);
+            setCompletedOrder(null);
+            setShowTicket(false);
+        }
+    }, [isOpen]);
 
     const handleCedulaLookup = async (cedula: string) => {
         if (cedula.length < 5) return;
@@ -60,13 +93,14 @@ export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, o
         try {
             const res = await api.get(`/customers/lookup/${cedula}`);
             if (res.data) {
-                setClientData({
-                    name: res.data.name || "",
-                    cedula: res.data.cedula || "",
-                    phone: res.data.phone || "",
-                    email: res.data.email || "",
-                    address: res.data.address || ""
-                });
+                setClientData(prev => ({
+                    ...prev,
+                    name: res.data.name || prev.name,
+                    cedula: res.data.cedula || prev.cedula,
+                    phone: res.data.phone || prev.phone,
+                    email: res.data.email || prev.email,
+                    address: res.data.address || prev.address
+                }));
                 toast.success("¡Bienvenido de nuevo!", {
                     description: `Hemos cargado tus datos, ${res.data.name.split(' ')[0]}.`
                 });
@@ -124,6 +158,18 @@ export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, o
             await api.post("/web-orders/", payload);
         },
         onSuccess: () => {
+            const orderData = {
+                cart: [...cart],
+                totalUSD: total,
+                totalBs: totalBs,
+                totalTax: totalTax,
+                fee: deliveryMethod.fee,
+                method: deliveryMethod.label,
+                clientName: clientData.name,
+                clientCedula: clientData.cedula,
+                refCode: refCode
+            };
+            setCompletedOrder(orderData);
             setFinalTotals({
                 usd: total,
                 bs: totalBs,
@@ -151,7 +197,18 @@ export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, o
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.[0]) setFile(e.target.files[0]);
+        const selectedFile = e.target.files?.[0];
+        if (selectedFile) {
+            if (!selectedFile.type.startsWith('image/')) {
+                toast.error("Solo se permiten imágenes");
+                return;
+            }
+            if (selectedFile.size > 2 * 1024 * 1024) {
+                toast.error("La imagen no debe superar los 2MB");
+                return;
+            }
+            setFile(selectedFile);
+        }
     };
 
     return (
@@ -339,7 +396,7 @@ export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, o
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            {['Pago Móvil', 'Zelle', 'Binance', 'Zinli'].map(m => (
+                            {Object.keys(PAYMENT_DETAILS).map(m => (
                                 <button
                                     key={m}
                                     onClick={() => setSelectedMethod(m)}
@@ -488,6 +545,14 @@ export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, o
 
                         <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">¿Qué sigue?</p>
+                            
+                            <button
+                                onClick={() => setShowTicket(true)}
+                                className="inline-flex items-center justify-center gap-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white px-8 py-4 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all w-full mb-2"
+                            >
+                                Imprimir / Ver Ticket de Compra
+                            </button>
+
                             <a
                                 href={formatWhatsAppLink(process.env.NEXT_PUBLIC_BUSINESS_PHONE || "", `Hola, acabo de realizar el pedido web.\n\n👤 *Cliente:* ${clientData.name}\n📧 *Correo:* ${clientData.email}\n🚚 *Entrega:* ${finalTotals.method}${finalTotals.fee > 0 ? ` ($${finalTotals.fee.toFixed(2)})` : ''}\n💰 *Total:* ${finalTotals.bs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} Bs.\n🛒 *Monto USD:* ${formatCurrency(finalTotals.usd)}\n\n_Favor confirmar recepción del pago._`)}
                                 target="_blank"
@@ -501,6 +566,14 @@ export function CheckoutModal({ isOpen, onClose, bcvRate }: { isOpen: boolean, o
                     </div>
                 )}
             </div>
+
+            {showTicket && completedOrder && (
+                <WebOrderTicket
+                    order={completedOrder}
+                    bcvRate={bcvRate}
+                    onClose={() => setShowTicket(false)}
+                />
+            )}
         </Modal>
     );
 }

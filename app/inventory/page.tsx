@@ -12,9 +12,10 @@ import {
     Package,
     AlertTriangle,
     Tags,
+    Filter
 } from "lucide-react";
 // import { motion, AnimatePresence } from "framer-motion";
-import { formatCurrency, getImageUrl } from "@/lib/utils";
+import { getImageUrl } from "@/lib/utils";
 
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -22,11 +23,20 @@ import { ProductForm } from "@/components/inventory/ProductForm";
 import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
 import { CategoryManager } from "@/components/inventory/CategoryManager";
 import { CategoryFilterSelect } from "@/components/ui/CategoryFilterSelect";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
 // import { useUIStore } from "@/store/uiStore";
 import { toast } from "sonner";
 import { Product, Category } from "@/types";
+import { Provider } from "@/types";
 import { Pagination } from "@/components/ui/pagination";
 import { useDebounce } from "@/hooks/useDebounce";
+import { FILE } from "dns";
 
 export default function InventoryPage() {
     const queryClient = useQueryClient();
@@ -40,6 +50,7 @@ export default function InventoryPage() {
     const [detailProduct, setDetailProduct] = useState<Product | null>(null);
     const [productToDelete, setProductToDelete] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const [selectedProvider, setSelectedProvider] = useState<number | null>(null);
     const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
 
     const { data: categories } = useQuery<Category[]>({
@@ -50,17 +61,26 @@ export default function InventoryPage() {
         },
     });
 
+    const { data: providers } = useQuery<Provider[]>({
+        queryKey: ["providers"],
+        queryFn: async () => {
+            const { data } = await api.get("/providers/");
+            return data;
+        },
+    });
+
 
     const debouncedSearch = useDebounce(search, 350);
 
 
     const { data: products, isLoading, isPlaceholderData } = useQuery<Product[]>({
 
-        queryKey: ["products", page, debouncedSearch, selectedCategory],
+        queryKey: ["products", page, debouncedSearch, selectedCategory, selectedProvider],
         queryFn: async () => {
             const params = {
                 search: debouncedSearch.trim() || undefined,
                 category_id: selectedCategory ?? undefined,
+                provider_id: selectedProvider ?? undefined,
                 skip: (page - 1) * limit,
                 limit
             };
@@ -68,6 +88,7 @@ export default function InventoryPage() {
             return data;
         },
         placeholderData: (previousData) => previousData,
+        staleTime: 1000 * 60 * 2,
     });
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,12 +187,37 @@ export default function InventoryPage() {
                         className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-gray-400 dark:text-white sm:text-base"
                     />
                 </div>
+                {providers && providers.length > 0 && (
+                    <div className="w-full sm:w-44 md:w-48 shrink-0 py-2">
+                        <Select
+                            value={selectedProvider?.toString()}
+                            onValueChange={(value) => {
+                                setSelectedProvider(value === "all" ? null : Number(value));
+                                setPage(1);
+                            }}
+                        >
+                            <SelectTrigger className="w-full rounded-xl border border-gray-200 bg-white py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+                                <Filter className="h-4.5 w-4.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
+                                <SelectValue placeholder="Todos los proveedores" />
+                            </SelectTrigger>
+                            <SelectContent align="end" position="popper">
+                                <SelectItem value="all">Todos los proveedores</SelectItem>
+                                {providers.map((provider) => (
+                                    <SelectItem key={provider.id} value={provider.id.toString()}>
+                                        {provider.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
                 {categories && categories.length > 0 && (
                     <CategoryFilterSelect
                         categories={categories}
                         value={selectedCategory}
                         onChange={handleCategoryFilter}
-                        className="w-full sm:w-72 shrink-0"
+                        compact
+                        className="w-full sm:w-44 md:w-48 shrink-0"
                     />
                 )}
             </div>
@@ -214,8 +260,11 @@ export default function InventoryPage() {
                                                     )}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="wrap-break-words max-w-[200px]">{product.name}</span>
+                                                    <span className="wrap-break-words max-w-50">{product.name}</span>
                                                     <span className="text-xs text-gray-400">{product.barcode}</span>
+                                                    {providers?.find(p => p.id === product.provider_id)?.name && (
+                                                        <span className="text-xs text-gray-400">{providers?.find(p => p.id === product.provider_id)?.name}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>

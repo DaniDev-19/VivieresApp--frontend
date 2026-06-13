@@ -2,8 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import api from "@/lib/api";
-import { formatCurrency, formatWhatsAppLink } from "@/lib/utils";
+import { formatWhatsAppLink } from "@/lib/utils";
 import { Plus, CheckCircle, Clock, Trash2, FileText } from "lucide-react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
@@ -11,10 +12,11 @@ import JsBarcode from "jsbarcode";
 import { Modal } from "@/components/ui/Modal";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Provider, PurchaseOrder } from "@/types";
+import { Provider, PurchaseOrder, Category } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { toast } from "sonner";
 import { Pagination } from "@/components/ui/pagination";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: () => void }) {
     const [providerId, setProviderId] = useState<number | null>(null);
@@ -23,13 +25,87 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
     // Items state
     const [lines, setLines] = useState<any[]>([]);
     const [selectedProd, setSelectedProd] = useState("");
+    const [productQuery, setProductQuery] = useState("");
+    const [stockFilter, setStockFilter] = useState<"all" | "out" | "low">("all");
     const [manualName, setManualName] = useState("");
     const [qty, setQty] = useState(1);
     const [isManual, setIsManual] = useState(false);
 
     // Fetch data
     const { data: providers } = useQuery({ queryKey: ["providers"], queryFn: async () => (await api.get("/providers/")).data });
-    const { data: products } = useQuery({ queryKey: ["products"], queryFn: async () => (await api.get("/products/")).data });
+    const { data: categories } = useQuery<Category[]>({ queryKey: ["categories"], queryFn: async () => (await api.get("/categories")).data, staleTime: 1000 * 60 * 10 });
+
+    const [productCategoryFilter, setProductCategoryFilter] = useState<number | null>(null);
+    const [productProviderFilter, setProductProviderFilter] = useState<number | null>(null);
+
+    // Remote product search: debounce the input and query the server
+    const debouncedProductQuery = useDebounce(productQuery, 300);
+    const { data: products = [], isFetching: productsLoading } = useQuery({
+        queryKey: ["products-for-order", debouncedProductQuery, stockFilter, productCategoryFilter, productProviderFilter],
+        queryFn: async () => {
+            const params: any = {
+                search: debouncedProductQuery || undefined,
+                limit: 50,
+            };
+
+            if (productCategoryFilter != null) params.category_id = productCategoryFilter;
+            if (productProviderFilter != null) params.provider_id = productProviderFilter;
+
+            if (stockFilter === "out") {
+                params.stock_eq = 0; // pedir solo productos sin stock
+            } else if (stockFilter === "low") {
+                params.stock_lt = 5; // pedir productos con stock menor a 5
+            }
+
+            const { data } = await api.get("/products", { params });
+            return data;
+        },
+        keepPreviousData: true,
+    });
+
+    const normalize = (value: string) =>
+        value
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "")
+            .toLowerCase();
+
+    // Server already returns matching results via `search`; additionally allow client-side normalization
+    const filteredProducts = (products as any[] ?? []).filter((p) => {
+        const query = normalize(productQuery.trim());
+        if (!query) return true;
+        const name = normalize(p.name?.toString() || "");
+        const barcode = normalize(p.barcode?.toString() || "");
+        const code = normalize(p.code?.toString() || "");
+        const id = p.id?.toString() || "";
+        return (
+            name.includes(query) ||
+            barcode.includes(query) ||
+            code.includes(query) ||
+            id.includes(query)
+        );
+    });
+
+    const resultCount = filteredProducts.length;
+
+    // Auto-select when debounce query yields exactly one match (friendly UX)
+    React.useEffect(() => {
+        if (isManual) return;
+        const q = debouncedProductQuery.trim();
+        if (!q) return;
+
+        const first = (filteredProducts ?? [])[0];
+        if (!first) return;
+
+        const qnorm = normalize(q);
+        const name = normalize(first.name?.toString() || "");
+        const code = normalize(first.code?.toString() || "");
+        const barcode = normalize(first.barcode?.toString() || "");
+
+        // Auto-select when only one result, or when the first result strongly matches the query start
+        if ((filteredProducts ?? []).length === 1 || name.startsWith(qnorm) || code.startsWith(qnorm) || barcode.startsWith(qnorm)) {
+            setSelectedProd(first.id.toString());
+        }
+    }, [debouncedProductQuery, filteredProducts, isManual]);
 
     const handleAddLine = () => {
         if (qty < 1) return;
@@ -80,14 +156,22 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium mb-1">Proveedor *</label>
-                    <select
-                        className="w-full rounded-md border p-2 bg-white dark:bg-gray-800"
-                        onChange={e => setProviderId(Number(e.target.value))}
-                        value={providerId || ""}
+                    <Select
+                        value={providerId != null ? providerId.toString() : "none"}
+                        onValueChange={(value) => setProviderId(value !== "none" ? Number(value) : null)}
                     >
-                        <option value="">Seleccionar...</option>
-                        {(providers as Provider[])?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                        <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                            <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                        <SelectContent align="end" position="popper">
+                            <SelectItem value="none">Seleccionar...</SelectItem>
+                            {(providers as Provider[])?.map(p => (
+                                <SelectItem key={p.id} value={p.id.toString()}>
+                                    {p.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 
@@ -116,8 +200,8 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                     </label>
                 </div>
 
-                <div className="flex gap-2 items-end mb-2">
-                    <div className="flex-1">
+                <div className="space-y-2 mb-2">
+                    <div>
                         <label className="text-xs text-gray-500">Producto</label>
                         {isManual ? (
                             <input
@@ -128,35 +212,122 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                                 onChange={e => setManualName(e.target.value)}
                             />
                         ) : (
-                            <select
-                                className="w-full rounded border p-1.5 text-sm"
-                                value={selectedProd}
-                                onChange={(e) => setSelectedProd(e.target.value)}
-                            >
-                                <option value="">Seleccionar del inventario...</option>
-                                {(products as any[])?.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock_quantity})</option>
-                                ))}
-                            </select>
+                            <>
+                                <input
+                                    type="text"
+                                    title="Buscar producto por nombre o código"
+                                    aria-label="Buscar producto por nombre o código"
+                                    className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15"
+                                    placeholder="Buscar por nombre o código..."
+                                    value={productQuery}
+                                    onChange={(e) => {
+                                        setProductQuery(e.target.value);
+                                        if (selectedProd) {
+                                            setSelectedProd("");
+                                        }
+                                    }}
+                                />
+                                <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+                                    <div className="w-full">
+                                        <Select
+                                            value={productCategoryFilter != null ? productCategoryFilter.toString() : "none"}
+                                            onValueChange={(v) => setProductCategoryFilter(v === "none" ? null : Number(v))}
+                                        >
+                                            <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                                <SelectValue placeholder="Categoria (todas)" />
+                                            </SelectTrigger>
+                                            <SelectContent align="end" position="popper">
+                                                <SelectItem value="none">Todas las categorías</SelectItem>
+                                                {(categories ?? []).map(c => (
+                                                    <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="w-full">
+                                        <Select
+                                            value={productProviderFilter != null ? productProviderFilter.toString() : "none"}
+                                            onValueChange={(v) => setProductProviderFilter(v === "none" ? null : Number(v))}
+                                        >
+                                            <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                                <SelectValue placeholder="Proveedor (todos)" />
+                                            </SelectTrigger>
+                                            <SelectContent align="end" position="popper">
+                                                <SelectItem value="none">proveedores</SelectItem>
+                                                {(providers ?? []).map(p => (
+                                                    <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="w-full">
+                                        <Select
+                                            value={stockFilter}
+                                            onValueChange={(v: string) => setStockFilter(v as any)}
+                                        >
+                                            <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                                <SelectValue placeholder="Stock" />
+                                            </SelectTrigger>
+                                            <SelectContent align="end" position="popper">
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                <SelectItem value="out">Sin stock (0)</SelectItem>
+                                                <SelectItem value="low">Bajo stock (&lt;5)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div className="mt-2 rounded-lg border border-gray-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-gray-700 dark:bg-slate-900 dark:text-slate-300">
+                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                        <span className="text-xs font-semibold">Resultados: {resultCount}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {productsLoading ? "Cargando…" : `${resultCount} producto${resultCount === 1 ? "" : "s"}`}
+                                        </span>
+                                    </div>
+                                </div>
+                                <Select
+                                    value={selectedProd || "none"}
+                                    onValueChange={(value) => setSelectedProd(value !== "none" ? value : "")}
+                                >
+                                    <SelectTrigger className="mt-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                        <SelectValue placeholder="Seleccionar del inventario..." />
+                                    </SelectTrigger>
+                                    <SelectContent align="end" position="popper">
+                                        <SelectItem value="none">Seleccionar del inventario...</SelectItem>
+                                        {filteredProducts.length === 0 ? (
+                                            <SelectItem value="none">No hay resultados</SelectItem>
+                                        ) : (
+                                            filteredProducts.map(p => (
+                                                <SelectItem key={p.id} value={p.id.toString()}>
+                                                    {p.name} {p.barcode ? `— ${p.barcode}` : ""} (Stock: {p.stock_quantity})
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </>
                         )}
                     </div>
-                    <div className="w-20">
-                        <label className="text-xs text-gray-500">Cant.</label>
-                        <input
-                            type="number"
-                            min="1"
-                            className="w-full rounded border p-1.5 text-sm"
-                            value={qty}
-                            onChange={(e) => setQty(Number(e.target.value))}
-                        />
+                    <div className="grid grid-cols-[auto_auto] gap-3 items-end">
+                        <div className="w-420 sm:w-32">
+                            <label className="text-xs text-gray-500">Cant.</label>
+                            <input
+                                type="number"
+                                min="1"
+                                className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-medium"
+                                value={qty}
+                                onChange={(e) => setQty(Number(e.target.value))}
+                            />
+                        </div>
+                        <button
+                            onClick={handleAddLine}
+                            type="button"
+                            className="min-w-[8rem] bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700"
+                        >
+                            Agregar
+                        </button>
                     </div>
-                    <button
-                        onClick={handleAddLine}
-                        type="button"
-                        className="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700"
-                    >
-                        Agregar
-                    </button>
                 </div>
 
                 {/* Info Manual */}
@@ -286,14 +457,18 @@ function ConversionForm({ item, onSuccess, onCancel }: { item: any, onSuccess: (
             </div>
             <div>
                 <label className="block text-xs font-bold text-gray-700">IVA</label>
-                <select
-                    className="w-full border rounded p-1.5 text-sm"
-                    value={formData.tax_rate}
-                    onChange={e => setFormData({ ...formData, tax_rate: Number(e.target.value) })}
+                <Select
+                    value={formData.tax_rate.toString()}
+                    onValueChange={(value) => setFormData({ ...formData, tax_rate: Number(value) })}
                 >
-                    <option value={0}>Exento (0%)</option>
-                    <option value={0.16}>Aplica 16%</option>
-                </select>
+                    <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                        <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent align="end" position="popper">
+                        <SelectItem value="0">Exento (0%)</SelectItem>
+                        <SelectItem value="0.16">Aplica 16%</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

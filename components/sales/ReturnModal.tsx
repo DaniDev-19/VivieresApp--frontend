@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { X, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 interface ReturnModalProps {
     sale: {
@@ -131,15 +132,19 @@ export function ReturnModal({ sale, onClose, onSuccess }: ReturnModalProps) {
 
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Método de reembolso</label>
-                        <select
+                        <Select
                             value={refundMethod}
-                            onChange={(e) => setRefundMethod(e.target.value as any)}
-                            className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white p-3 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                            onValueChange={(value) => setRefundMethod(value as "cash" | "credit_note" | "original")}
                         >
-                            <option value="credit_note">Nota de Crédito</option>
-                            <option value="cash">Efectivo</option>
-                            <option value="original">Método Original</option>
-                        </select>
+                            <SelectTrigger className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-red-500 focus:ring-red-500/15">
+                                <SelectValue placeholder="Seleccionar método" />
+                            </SelectTrigger>
+                            <SelectContent align="end" position="popper">
+                                <SelectItem value="credit_note">Nota de Crédito</SelectItem>
+                                <SelectItem value="cash">Efectivo</SelectItem>
+                                <SelectItem value="original">Método Original</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div>

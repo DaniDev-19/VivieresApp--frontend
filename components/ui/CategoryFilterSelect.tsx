@@ -3,6 +3,13 @@
 import { Category } from "@/types";
 import { ChevronDown, Filter } from "lucide-react";
 import { clsx } from "clsx";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface CategoryFilterSelectProps {
     categories: Category[];
@@ -24,28 +31,28 @@ export function CategoryFilterSelect({
     if (compact) {
         return (
             <div className={clsx(
-                "flex min-w-0 items-center gap-2 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all duration-200 hover:border-indigo-300 dark:hover:border-indigo-800 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/15 focus-within:shadow-indigo-500/5",
+                "w-full sm:w-44 md:w-48 shrink-0 p-2",
                 className
             )}>
-                <Filter className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
-                <div className="relative min-w-0 flex-1">
-                    <select
-                        value={value ?? ""}
-                        onChange={(e) =>
-                            onChange(e.target.value ? parseInt(e.target.value, 10) : null)
-                        }
-                        title="Filtrar por categoría"
-                        className="w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent text-xs font-semibold text-gray-700 dark:text-gray-300 outline-none pr-6 sm:text-sm"
-                    >
-                        <option value="" className="bg-white dark:bg-gray-900">Todas las categorías</option>
+                <Select
+                    value={value != null ? value.toString() : undefined}
+                    onValueChange={(selectedValue) =>
+                        onChange(selectedValue === "all" ? null : parseInt(selectedValue, 10))
+                    }
+                >
+                    <SelectTrigger className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                        <Filter className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
+                        <SelectValue placeholder="Todas las categorías" />
+                    </SelectTrigger>
+                    <SelectContent align="end" position="popper">
+                        <SelectItem value="all">Todas las categorías</SelectItem>
                         {categories.map((cat) => (
-                            <option key={cat.id} value={cat.id} className="bg-white dark:bg-gray-900">
+                            <SelectItem key={cat.id} value={cat.id.toString()}>
                                 {cat.name}
-                            </option>
+                            </SelectItem>
                         ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-                </div>
+                    </SelectContent>
+                </Select>
             </div>
         );
     }
@@ -59,21 +66,24 @@ export function CategoryFilterSelect({
         >
             <Filter className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
             <div className="relative min-w-0 flex-1">
-                <select
-                    value={value ?? ""}
-                    onChange={(e) =>
-                        onChange(e.target.value ? parseInt(e.target.value, 10) : null)
+                <Select
+                    value={value != null ? value.toString() : undefined}
+                    onValueChange={(selectedValue) =>
+                        onChange(selectedValue === "none" ? null : parseInt(selectedValue, 10))
                     }
-                    title="Filtrar por categoría"
-                    className="w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent text-sm font-semibold text-gray-700 dark:text-gray-300 outline-none pr-6"
                 >
-                    <option value="" className="bg-white dark:bg-gray-900">Todas las categorías</option>
-                    {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id} className="bg-white dark:bg-gray-900">
-                            {cat.name}
-                        </option>
-                    ))}
-                </select>
+                    <SelectTrigger className="w-full min-w-0 cursor-pointer rounded-none bg-transparent px-0 py-0 text-sm font-semibold text-gray-700 dark:text-gray-300 outline-none pr-6">
+                        <SelectValue placeholder="Todas las categorías" />
+                    </SelectTrigger>
+                    <SelectContent align="end" position="popper">
+                        <SelectItem value="none">Todas las categorías</SelectItem>
+                        {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id.toString()}>
+                                {cat.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
                 <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             </div>
         </div>

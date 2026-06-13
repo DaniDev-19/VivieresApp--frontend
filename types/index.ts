@@ -17,6 +17,7 @@ export interface Product {
     stock_quantity: number;
     min_stock_level: number;
     category_id?: number | null;
+    provider_id?: number | null;
     category?: Category | null;
     image_url: string;
     is_public: boolean;

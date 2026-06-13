@@ -5,8 +5,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Loader2, Upload, X } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
-import { Product, Category } from "@/types";
+import { Product, Category, Provider } from "@/types";
 import { toast } from "sonner";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 
 interface ProductFormProps {
@@ -23,6 +30,7 @@ const EMPTY_PRODUCT: Product = {
     profit_margin: 0.30,
     stock_quantity: 0,
     min_stock_level: 5,
+    provider_id: null,
     image_url: "",
     is_public: true,
     apply_iva_web: true,
@@ -49,6 +57,7 @@ function toApiPayload(data: Product) {
         image_url: data.image_url || null,
         is_public: data.is_public,
         apply_iva_web: data.apply_iva_web,
+        provider_id: data.provider_id ?? null,
     };
 }
 
@@ -59,6 +68,14 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         queryKey: ["categories"],
         queryFn: async () => {
             const { data } = await api.get("/categories");
+            return data;
+        },
+    });
+
+    const { data: providers } = useQuery<Provider[]>({
+        queryKey: ["providers"],
+        queryFn: async () => {
+            const { data } = await api.get("/providers/");
             return data;
         },
     });
@@ -81,6 +98,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
             stock_quantity: Number(product.stock_quantity ?? 0),
             min_stock_level: Number(product.min_stock_level ?? 5),
             category_id: product.category_id ?? product.category?.id ?? null,
+            provider_id: product.provider_id ?? null,
             offer_price_usd: product.offer_price_usd ?? null,
             image_url: product.image_url ?? "",
             is_public: product.is_public ?? true,
@@ -172,23 +190,53 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                         <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                             Categoría
                         </label>
-                        <select
-                            value={formData.category_id ?? ""}
-                            onChange={(e) =>
+                        <Select
+                            value={formData.category_id != null ? formData.category_id.toString() : "none"}
+                            onValueChange={(value) =>
                                 setFormData({
                                     ...formData,
-                                    category_id: e.target.value ? parseInt(e.target.value) : null,
+                                    category_id: value === "none" ? null : parseInt(value, 10),
                                 })
                             }
-                            className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800"
                         >
-                            <option value="">Sin categoría</option>
-                            {categories?.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                    {cat.name}
-                                </option>
-                            ))}
-                        </select>
+                            <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                                <SelectValue placeholder="Sin categoría" />
+                            </SelectTrigger>
+                            <SelectContent align="end" position="popper">
+                                <SelectItem value="none">Sin categoría</SelectItem>
+                                {categories?.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                                        {cat.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Proveedor
+                        </label>
+                        <Select
+                            value={formData.provider_id != null ? formData.provider_id.toString() : "none"}
+                            onValueChange={(value) =>
+                                setFormData({
+                                    ...formData,
+                                    provider_id: value === "none" ? null : parseInt(value, 10),
+                                })
+                            }
+                        >
+                            <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                                <SelectValue placeholder="Sin proveedor" />
+                            </SelectTrigger>
+                            <SelectContent align="end" position="popper">
+                                <SelectItem value="none">Sin proveedor</SelectItem>
+                                {providers?.map((provider) => (
+                                    <SelectItem key={provider.id} value={provider.id.toString()}>
+                                        {provider.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 

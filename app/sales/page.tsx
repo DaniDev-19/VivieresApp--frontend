@@ -147,10 +147,10 @@ export default function SalesPage() {
     const canReturnOrExchange = (sale: Sale) => sale.status === "completed";
 
     const statCards = [
-        { label: "Hoy", value: stats?.today || 0, iconBg: "bg-emerald-100 dark:bg-emerald-900/30", iconColor: "text-emerald-600 dark:text-emerald-400", borderColor: "border-emerald-200 dark:border-emerald-800/50" },
-        { label: "Semana", value: stats?.week || 0, iconBg: "bg-blue-100 dark:bg-blue-900/30", iconColor: "text-blue-600 dark:text-blue-400", borderColor: "border-blue-200 dark:border-blue-800/50" },
-        { label: "Mes", value: stats?.month || 0, iconBg: "bg-violet-100 dark:bg-violet-900/30", iconColor: "text-violet-600 dark:text-violet-400", borderColor: "border-violet-200 dark:border-violet-800/50" },
-        { label: "Año", value: stats?.year || 0, iconBg: "bg-amber-100 dark:bg-amber-900/30", iconColor: "text-amber-600 dark:text-amber-400", borderColor: "border-amber-200 dark:border-amber-800/50" },
+        { label: "Hoy (Neto)", value: stats?.today || 0, iconBg: "bg-emerald-100 dark:bg-emerald-900/30", iconColor: "text-emerald-600 dark:text-emerald-400", borderColor: "border-emerald-200 dark:border-emerald-800/50" },
+        { label: "Semana (Neto)", value: stats?.week || 0, iconBg: "bg-blue-100 dark:bg-blue-900/30", iconColor: "text-blue-600 dark:text-blue-400", borderColor: "border-blue-200 dark:border-blue-800/50" },
+        { label: "Mes (Neto)", value: stats?.month || 0, iconBg: "bg-violet-100 dark:bg-violet-900/30", iconColor: "text-violet-600 dark:text-violet-400", borderColor: "border-violet-200 dark:border-violet-800/50" },
+        { label: "Año (Neto)", value: stats?.year || 0, iconBg: "bg-amber-100 dark:bg-amber-900/30", iconColor: "text-amber-600 dark:text-amber-400", borderColor: "border-amber-200 dark:border-amber-800/50" },
     ];
 
     return (
@@ -255,8 +255,22 @@ export default function SalesPage() {
                                                     {sale.items?.length || 0} productos
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 font-bold text-indigo-600 dark:text-indigo-400">
-                                                ${sale.total_amount_usd.toFixed(2)}
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className={`font-bold ${sale.net_amount_usd !== undefined && sale.net_amount_usd !== sale.total_amount_usd ? 'text-gray-500 text-sm line-through' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                                        ${sale.total_amount_usd.toFixed(2)}
+                                                    </span>
+                                                    {sale.net_amount_usd !== undefined && sale.net_amount_usd !== sale.total_amount_usd && (
+                                                        <>
+                                                            <span className={`text-xs font-medium ${sale.net_amount_usd < sale.total_amount_usd ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                                {sale.net_amount_usd < sale.total_amount_usd ? '-' : '+'}${(Math.abs(sale.total_amount_usd - sale.net_amount_usd)).toFixed(2)}
+                                                            </span>
+                                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                                                ${sale.net_amount_usd.toFixed(2)} <span className="text-[10px] font-normal uppercase text-gray-500">Neto</span>
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${st.className}`}>

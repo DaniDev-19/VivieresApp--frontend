@@ -24,7 +24,9 @@ import {
     MinusCircle,
     Eye
 } from "lucide-react";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const renderItemsDetail = (itemsDetail: string) => {
     if (!itemsDetail) return <span className="text-gray-400">-</span>;
@@ -62,6 +64,8 @@ export default function DeliveriesPage() {
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [detailDelivery, setDetailDelivery] = useState<any>(null);
 
     // Selection states
     const [editingDelivery, setEditingDelivery] = useState<any>(null);
@@ -82,33 +86,22 @@ export default function DeliveriesPage() {
     // Product Selector states
     const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
     const [productSearch, setProductSearch] = useState("");
-    const [showProductDropdown, setShowProductDropdown] = useState(false);
+    const debouncedProductSearch = useDebounce(productSearch, 300);
 
     // Complete Delivery Cost prompt states
     const [completingDelivery, setCompletingDelivery] = useState<any>(null);
     const [completionCost, setCompletionCost] = useState("");
 
-    // View detail states
-    const [detailDelivery, setDetailDelivery] = useState<any>(null);
-    const [showDetailModal, setShowDetailModal] = useState(false);
+    // Missing states for product selector & report exports
+    const [showProductDropdown, setShowProductDropdown] = useState(false);
+    const [exportingReport, setExportingReport] = useState(false);
+    const [reportStartDate, setReportStartDate] = useState("");
+    const [reportEndDate, setReportEndDate] = useState("");
 
     const handleOpenCompleteModal = (delivery: any) => {
         setCompletingDelivery(delivery);
-        setCompletionCost(delivery.cost_usd !== null && delivery.cost_usd !== undefined ? String(delivery.cost_usd) : "");
+        setCompletionCost("");
     };
-
-    // Sync selectedProducts with items_detail string representation
-    useEffect(() => {
-        setFormData((prev) => ({
-            ...prev,
-            items_detail: selectedProducts.length > 0 ? JSON.stringify(selectedProducts) : ""
-        }));
-    }, [selectedProducts]);
-
-    // Report filter states
-    const [reportStartDate, setReportStartDate] = useState("");
-    const [reportEndDate, setReportEndDate] = useState("");
-    const [exportingReport, setExportingReport] = useState(false);
 
     // 1. Fetch Deliveries
     const { data: deliveries = [], isLoading } = useQuery<any[]>({
@@ -708,66 +701,78 @@ export default function DeliveriesPage() {
                                         </div>
                                         <div>
                                             <label htmlFor="delivery-status" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Estado</label>
-                                            <select
-                                                id="delivery-status"
+                                            <Select
                                                 value={formData.status}
-                                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                                className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                                onValueChange={(v) => setFormData({ ...formData, status: v })}
                                             >
-                                                <option value="pending">Pendiente</option>
-                                                <option value="in_transit">En Ruta</option>
-                                                <option value="completed">Completado</option>
-                                                <option value="cancelled">Cancelado</option>
-                                            </select>
+                                                <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent align="end" position="popper">
+                                                    <SelectItem value="pending">Pendiente</SelectItem>
+                                                    <SelectItem value="in_transit">En Ruta</SelectItem>
+                                                    <SelectItem value="completed">Completado</SelectItem>
+                                                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label htmlFor="delivery-provider-id" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Proveedor de Delivery</label>
-                                            <select
-                                                id="delivery-provider-id"
-                                                value={formData.provider_id}
-                                                onChange={(e) => setFormData({ ...formData, provider_id: e.target.value })}
-                                                className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                            <label htmlFor="delivery-provider-id" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Delivery</label>
+                                            <Select
+                                                value={formData.provider_id || "none"}
+                                                onValueChange={(v) => setFormData({ ...formData, provider_id: v === "none" ? "" : v })}
                                             >
-                                                <option value="">Seleccionar Proveedor...</option>
-                                                {providers.map((prov: any) => (
-                                                    <option key={prov.id} value={prov.id}>{prov.name}</option>
-                                                ))}
-                                            </select>
+                                                <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                                    <SelectValue placeholder="Seleccionar Proveedor..." />
+                                                </SelectTrigger>
+                                                <SelectContent align="end" position="popper">
+                                                    <SelectItem value="none">Seleccionar Proveedor...</SelectItem>
+                                                    {providers.map((prov: any) => (
+                                                        <SelectItem key={prov.id} value={prov.id.toString()}>{prov.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div>
-                                            <label htmlFor="delivery-user-id" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Usuario / Repartidor</label>
-                                            <select
-                                                id="delivery-user-id"
-                                                value={formData.delivery_user_id}
-                                                onChange={(e) => setFormData({ ...formData, delivery_user_id: e.target.value })}
-                                                className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                            <label htmlFor="delivery-user-id" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Usuario (opcional)</label>
+                                            <Select
+                                                value={formData.delivery_user_id || "none"}
+                                                onValueChange={(v) => setFormData({ ...formData, delivery_user_id: v === "none" ? "" : v })}
                                             >
-                                                <option value="">Seleccionar Repartidor...</option>
-                                                {deliveryDrivers.map((driver: any) => (
-                                                    <option key={driver.id} value={driver.id}>{driver.username}</option>
-                                                ))}
-                                            </select>
+                                                <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                                    <SelectValue placeholder="Seleccionar Repartidor..." />
+                                                </SelectTrigger>
+                                                <SelectContent align="end" position="popper">
+                                                    <SelectItem value="none">Seleccionar Repartidor...</SelectItem>
+                                                    {deliveryDrivers.map((driver: any) => (
+                                                        <SelectItem key={driver.id} value={driver.id.toString()}>{driver.username}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
 
                                     <div>
                                         <label htmlFor="delivery-sale-id" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Venta Asociada</label>
-                                        <select
-                                            id="delivery-sale-id"
-                                            value={formData.sale_id}
-                                            onChange={(e) => handleSaleChange(e.target.value)}
-                                            className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        <Select
+                                            value={formData.sale_id || "none"}
+                                            onValueChange={(v) => handleSaleChange(v === "none" ? "" : v)}
                                         >
-                                            <option value="">Seleccionar venta... (Opcional)</option>
-                                            {todaySales.map((sale: any) => (
-                                                <option key={sale.id} value={sale.id}>
-                                                    Venta #{sale.id} - {sale.customer_name || "Sin cliente"} (${(sale.total_amount_usd || 0).toFixed(2)})
-                                                </option>
-                                            ))}
-                                        </select>
+                                            <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                                <SelectValue placeholder="Seleccionar venta... (Opcional)" />
+                                            </SelectTrigger>
+                                            <SelectContent align="end" position="popper">
+                                                <SelectItem value="none">Seleccionar venta... (Opcional)</SelectItem>
+                                                {todaySales.map((sale: any) => (
+                                                    <SelectItem key={sale.id} value={sale.id.toString()}>
+                                                        Venta #{sale.id} - {sale.customer_name || "Sin cliente"} (${(sale.total_amount_usd || 0).toFixed(2)})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
 
@@ -1259,6 +1264,48 @@ export default function DeliveriesPage() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+// RemoteProductSelect component: small helper inside this file to reuse Select
+function RemoteProductSelect({ search, onAdd }: { search: string, onAdd: (p: any) => void }) {
+    const { data: products = [], isFetching } = useQuery({
+        queryKey: ["products-delivery", search],
+        queryFn: async () => {
+            const { data } = await api.get("/products", { params: { search: search || undefined, limit: 50 } });
+            return data;
+        },
+        enabled: true,
+        keepPreviousData: true,
+    });
+
+    return (
+        <div className="mt-2">
+            <Select value={"none"} onValueChange={(v) => {
+                if (v === "none") return;
+                const prod = (products as any[]).find(p => p.id.toString() === v);
+                if (prod) onAdd(prod);
+            }}>
+                <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                    <SelectValue placeholder={isFetching ? "Buscando..." : "Seleccionar producto..."} />
+                </SelectTrigger>
+                <SelectContent align="end" position="popper">
+                    <SelectItem value="none">Seleccionar producto...</SelectItem>
+                    {products.length === 0 ? (
+                        <SelectItem value="none">No se encontraron productos</SelectItem>
+                    ) : (
+                        products.map((prod: any) => (
+                            <SelectItem key={prod.id} value={prod.id.toString()}>
+                                <div className="flex flex-col">
+                                    <span className="truncate font-medium">{prod.name}</span>
+                                    <span className="text-xxs text-gray-400">{prod.barcode} — Stock: {prod.stock_quantity}</span>
+                                </div>
+                            </SelectItem>
+                        ))
+                    )}
+                </SelectContent>
+            </Select>
         </div>
     );
 }

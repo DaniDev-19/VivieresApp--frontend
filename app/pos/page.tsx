@@ -16,6 +16,7 @@ import {
     UserPlus,
     User,
     Truck,
+    Filter,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -23,8 +24,15 @@ import { SaleTicket } from "@/components/sales/SaleTicket";
 import { PosProductList } from "@/components/pos/PosProductList";
 import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
 import { CategoryFilterSelect } from "@/components/ui/CategoryFilterSelect";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Pagination } from "@/components/ui/pagination";
-import { Product, Category } from "@/types";
+import { Product, Category, Provider } from "@/types";
 
 const PRODUCTS_PER_PAGE = 25;
 
@@ -34,6 +42,8 @@ export default function POSPage() {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [page, setPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const [selectedProvider, setSelectedProvider] = useState<number | null>(null);
+    const [showProviderFilter, setShowProviderFilter] = useState(true);
     const [detailProduct, setDetailProduct] = useState<Product | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -126,25 +136,35 @@ export default function POSPage() {
         staleTime: 1000 * 60 * 10,
     });
 
+    const { data: providers } = useQuery<Provider[]>({
+      queryKey: ["providers"],
+      queryFn: async () => {
+        const { data } = await api.get("/providers/");
+        return data;
+      },
+      staleTime: 1000 * 60 * 10,
+    });
+
     const isSearchActive = debouncedSearch.length >= 2;
 
-    const { data: products, isLoading, isFetching } = useQuery({
-        queryKey: ["pos-products", debouncedSearch, selectedCategory, page],
-        queryFn: async () => {
-            const res = await api.get("/products/", {
-                params: {
-                    skip: (page - 1) * PRODUCTS_PER_PAGE,
-                    limit: PRODUCTS_PER_PAGE,
-                    in_stock_only: true,
-                    ...(selectedCategory != null ? { category_id: selectedCategory } : {}),
-                    ...(isSearchActive ? { search: debouncedSearch } : {}),
-                },
-            });
-            return res.data as Product[];
-        },
-        staleTime: 1000 * 60 * 2,
-        refetchOnMount: "always",
-        placeholderData: (prev) => prev,
+    const { data: products, isLoading, isFetching } = useQuery<Product[]>({
+      queryKey: ["pos-products", debouncedSearch, selectedCategory, selectedProvider, page],
+      queryFn: async () => {
+        const res = await api.get("/products/", {
+          params: {
+            skip: (page - 1) * PRODUCTS_PER_PAGE,
+            limit: PRODUCTS_PER_PAGE,
+            in_stock_only: true,
+            ...(selectedCategory != null ? { category_id: selectedCategory } : {}),
+            ...(selectedProvider != null ? { provider_id: selectedProvider } : {}),
+            ...(isSearchActive ? { search: debouncedSearch } : {}),
+          },
+        });
+        return res.data as Product[];
+      },
+      placeholderData: (prev) => prev as Product[] | undefined,
+      staleTime: 1000 * 60 * 2,
+      refetchOnMount: "always",
     });
 
 
@@ -331,6 +351,42 @@ export default function POSPage() {
                 className="w-full sm:w-64 md:w-72 shrink-0"
               />
             )}
+            {providers && providers.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowProviderFilter((s) => !s)}
+                  title={showProviderFilter ? "Ocultar filtro proveedor" : "Mostrar filtro proveedor"}
+                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                >
+                  <Truck className="h-4 w-4" />
+                </button>
+
+                {showProviderFilter && (
+                  <div className="w-full sm:w-44 md:w-48 shrink-0">
+                    <Select
+                      value={selectedProvider?.toString()}
+                      onValueChange={(value) => {
+                        setSelectedProvider(value === "all" ? null : Number(value));
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                        <Filter className="h-4.5 w-4.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
+                        <SelectValue placeholder="Todos los proveedores" />
+                      </SelectTrigger>
+                      <SelectContent align="end" position="popper">
+                        <SelectItem value="all">Todos los proveedores</SelectItem>
+                        {providers.map((prov) => (
+                          <SelectItem key={prov.id} value={prov.id.toString()}>
+                            {prov.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-xl">
@@ -404,17 +460,20 @@ export default function POSPage() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-              <select
+              <Select
                 value={displayCurrency}
-                onChange={(e) => setDisplayCurrency(e.target.value as any)}
-                title="Moneda de cobro"
-                className="max-w-22 cursor-pointer rounded-lg border border-gray-200 bg-white p-1 text-[10px] font-medium outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white sm:max-w-none sm:p-1.5 sm:text-xs"
+                onValueChange={(value) => setDisplayCurrency(value as "USD" | "BCV" | "USDT" | "COP")}
               >
-                <option value="USD">USD</option>
-                <option value="BCV">BCV</option>
-                <option value="USDT">USDT</option>
-                <option value="COP">COP</option>
-              </select>
+                <SelectTrigger className="max-w-22 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-[10px] font-medium outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white sm:max-w-none sm:px-2.5 sm:text-xs">
+                  <SelectValue placeholder="USD" />
+                </SelectTrigger>
+                <SelectContent align="end" position="popper">
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="BCV">BCV</SelectItem>
+                  <SelectItem value="USDT">USDT</SelectItem>
+                  <SelectItem value="COP">COP</SelectItem>
+                </SelectContent>
+              </Select>
 
               {lastUpdated && (
                 <span className="hidden rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400 xl:inline">
@@ -468,6 +527,8 @@ export default function POSPage() {
               {/* Input de búsqueda rápida por cédula o nombre */}
               <input
                 type="text"
+                title="Buscar cliente por cédula o nombre"
+                aria-label="Buscar cliente por cédula o nombre"
                 placeholder="Buscar por cédula o nombre..."
                 onChange={(e) => {
                   const query = e.target.value.trim().toLowerCase();
@@ -489,23 +550,27 @@ export default function POSPage() {
               />
 
               <div className="flex justify-end gap-2">
-                <select
-                  value={selectedCustomer?.id || ""}
-                  onChange={(e) => {
+                <Select
+                  value={selectedCustomer?.id?.toString() ?? "none"}
+                  onValueChange={(value) => {
                     const customer = customers?.find(
-                      (c: any) => c.id === parseInt(e.target.value),
+                      (c: any) => c.id === parseInt(value),
                     );
-                    setSelectedCustomer(customer || null);
+                    setSelectedCustomer(value === "none" ? null : customer || null);
                   }}
-                  className="flex-1 rounded-lg border border-gray-200 bg-gray-50 p-2 text-sm text-right outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 >
-                  <option value="">Sin cliente</option>
-                  {customers?.map((customer: any) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.cedula}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                    <SelectValue placeholder="Sin cliente" />
+                  </SelectTrigger>
+                  <SelectContent align="end" position="popper">
+                    <SelectItem value="none">Sin cliente</SelectItem>
+                    {customers?.map((customer: any) => (
+                      <SelectItem key={customer.id} value={customer.id.toString()}>
+                        {customer.name} - {customer.cedula}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -538,37 +603,49 @@ export default function POSPage() {
                       </h4>
                       {item.offer_price_usd != null &&
                         item.offer_price_usd > 0 && (
-                          <select
+                          <Select
                             value={item.priceType || "normal"}
-                            onChange={(e) =>
+                            onValueChange={(value) =>
                               updateItemPriceType(
                                 item.product_id,
-                                e.target.value as "normal" | "offer",
+                                value as "normal" | "offer",
                               )
                             }
-                            className="text-[10px] font-semibold bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded px-1.5 py-0.5 outline-none text-orange-700 dark:text-orange-300 cursor-pointer"
-                            title="Tipo de precio"
                           >
-                            <option value="normal">Normal</option>
-                            <option value="offer">Oferta</option>
-                          </select>
+                            <SelectTrigger
+                              size="sm"
+                              className="text-[10px] font-semibold bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded px-2 text-orange-700 dark:text-orange-300"
+                            >
+                              <SelectValue placeholder="Normal" />
+                            </SelectTrigger>
+                            <SelectContent align="end" position="popper">
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="offer">Oferta</SelectItem>
+                            </SelectContent>
+                          </Select>
                         )}
-                      <select
+                      <Select
                         value={item.priceBasis}
-                        onChange={(e) =>
+                        onValueChange={(value) =>
                           updateItemBasis(
                             item.product_id,
-                            e.target.value as any,
+                            value as "USD" | "BCV" | "USDT" | "COP",
                           )
                         }
-                        className="text-[10px] font-semibold bg-gray-200/60 dark:bg-gray-700/60 border border-gray-300/50 dark:border-gray-600/50 rounded px-1.5 py-0.5 outline-none text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-300/60 dark:hover:bg-gray-600/60 transition-colors"
-                        title="Moneda base del precio"
                       >
-                        <option value="USD">USD</option>
-                        <option value="BCV">BCV</option>
-                        <option value="USDT">USDT</option>
-                        <option value="COP">COP</option>
-                      </select>
+                        <SelectTrigger
+                          size="sm"
+                          className="text-[10px] font-semibold bg-gray-200/60 dark:bg-gray-700/60 border border-gray-300/50 dark:border-gray-600/50 rounded px-2 text-gray-700 dark:text-gray-300 hover:bg-gray-300/60 dark:hover:bg-gray-600/60 transition-colors"
+                        >
+                          <SelectValue placeholder="USD" />
+                        </SelectTrigger>
+                        <SelectContent align="end" position="popper">
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="BCV">BCV</SelectItem>
+                          <SelectItem value="USDT">USDT</SelectItem>
+                          <SelectItem value="COP">COP</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex flex-col gap-0.5 text-[10px]">
                       <span className="text-gray-500">
