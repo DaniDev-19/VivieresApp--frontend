@@ -60,7 +60,7 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
             const { data } = await api.get("/products", { params });
             return data;
         },
-        keepPreviousData: true,
+         placeholderData: (previousData) => previousData,
     });
 
     const normalize = (value: string) =>
@@ -255,7 +255,7 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                                             </SelectTrigger>
                                             <SelectContent align="end" position="popper">
                                                 <SelectItem value="none">proveedores</SelectItem>
-                                                {(providers ?? []).map(p => (
+                                                {(providers ?? []).map((p: any) => (
                                                     <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                                                 ))}
                                             </SelectContent>

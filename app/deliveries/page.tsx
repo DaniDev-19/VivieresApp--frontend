@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData} from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -111,7 +111,8 @@ export default function DeliveriesPage() {
             if (statusFilter) params.status_filter = statusFilter;
             const { data } = await api.get("/deliveries/", { params });
             return data;
-        }
+        },
+	 placeholderData: keepPreviousData,
     });
 
     // 2. Fetch Users (to select a delivery driver)
@@ -155,6 +156,19 @@ export default function DeliveriesPage() {
             return data;
         },
         enabled: isAdminOrWorker
+    });
+
+const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
+        queryKey: ["products-search", debouncedProductSearch],
+        queryFn: async () => {
+            if (!debouncedProductSearch.trim()) return [];
+            const { data } = await api.get("/products/", {
+                params: { search: debouncedProductSearch, limit: 10 }
+            });
+            return data;
+        },
+        enabled: showProductDropdown,
+        placeholderData: keepPreviousData, // Evita parpadeos usando la importación corregida
     });
 
     // 3. Mutations
@@ -1277,7 +1291,7 @@ function RemoteProductSelect({ search, onAdd }: { search: string, onAdd: (p: any
             return data;
         },
         enabled: true,
-        keepPreviousData: true,
+        placeholderData: (previousData) => previousData,
     });
 
     return (

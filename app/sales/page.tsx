@@ -256,22 +256,24 @@ export default function SalesPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className={`font-bold ${sale.net_amount_usd !== undefined && sale.net_amount_usd !== sale.total_amount_usd ? 'text-gray-500 text-sm line-through' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                                                        ${sale.total_amount_usd.toFixed(2)}
-                                                    </span>
-                                                    {sale.net_amount_usd !== undefined && sale.net_amount_usd !== sale.total_amount_usd && (
-                                                        <>
-                                                            <span className={`text-xs font-medium ${sale.net_amount_usd < sale.total_amount_usd ? 'text-red-500' : 'text-emerald-500'}`}>
-                                                                {sale.net_amount_usd < sale.total_amount_usd ? '-' : '+'}${(Math.abs(sale.total_amount_usd - sale.net_amount_usd)).toFixed(2)}
-                                                            </span>
-                                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                                                                ${sale.net_amount_usd.toFixed(2)} <span className="text-[10px] font-normal uppercase text-gray-500">Neto</span>
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
+    		<div className="flex flex-col gap-0.5">
+        {/* Cambiado a (sale as any) para omitir el error de tipos */}
+        <span className={`font-bold ${(sale as any).net_amount_usd !== undefined && (sale as any).net_amount_usd !== sale.total_amount_usd ? 'text-gray-500 text-sm line-through' : 'text-indigo-600 dark:text-indigo-400'}`}>
+            ${sale.total_amount_usd.toFixed(2)}
+        </span>
+        {(sale as any).net_amount_usd !== undefined && (sale as any).net_amount_usd !== sale.total_amount_usd && (
+            <>
+                <span className={`text-xs font-medium ${(sale as any).net_amount_usd < sale.total_amount_usd ? 'text-red-500' : 'text-emerald-500'}`}>
+                    {(sale as any).net_amount_usd < sale.total_amount_usd ? '-' : '+'}${(Math.abs(sale.total_amount_usd - (sale as any).net_amount_usd)).toFixed(2)}
+                </span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                    ${(sale as any).net_amount_usd.toFixed(2)} <span className="text-[10px] font-normal uppercase text-gray-500">Neto</span>
+                </span>
+            </>
+        )}
+    </div>
+</td>
+
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${st.className}`}>
                                                     {st.label}
