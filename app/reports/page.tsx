@@ -33,6 +33,7 @@ export default function ReportsPage() {
     // Sales State
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [salesPaymentMethod, setSalesPaymentMethod] = useState("");
     const [loadingSales, setLoadingSales] = useState(false);
 
     // Cash Close State
@@ -311,6 +312,7 @@ export default function ReportsPage() {
             };
             if (startDate) params.start_date = startDate;
             if (endDate) params.end_date = endDate;
+            if (salesPaymentMethod) params.payment_method = salesPaymentMethod;
 
             const response = await api.get("/reports/sales/export", {
                 params,
@@ -431,7 +433,7 @@ export default function ReportsPage() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`
-                                group inline-flex min-w-[max-content] items-center border-b-2 py-4 px-1 text-sm font-medium transition-colors
+                                group inline-flex min-w-max items-center border-b-2 py-4 px-1 text-sm font-medium transition-colors
                                 ${activeTab === tab.id
                                     ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
                                     : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -453,7 +455,7 @@ export default function ReportsPage() {
                         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Exportar Reporte de Ventas</h3>
 
-                            <div className="grid gap-4 sm:grid-cols-2 mb-6">
+                            <div className="grid gap-4 sm:grid-cols-2 mb-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
                                     <input
@@ -472,6 +474,30 @@ export default function ReportsPage() {
                                         className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">M&eacute;todo de Pago (Opcional)</label>
+                                <Select
+                                    value={salesPaymentMethod || "all"}
+                                    onValueChange={(v) => setSalesPaymentMethod(v === "all" ? "" : v)}
+                                >
+                                    <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                                        <SelectValue placeholder="Todos los m&eacute;todos" />
+                                    </SelectTrigger>
+                                    <SelectContent align="end" position="popper">
+                                        <SelectItem value="all">Todos los m&eacute;todos</SelectItem>
+                                        <SelectItem value="Efectivo_USD">Efectivo USD</SelectItem>
+                                        <SelectItem value="Efectivo_BS">Efectivo BS</SelectItem>
+                                        <SelectItem value="Pago_Movil">Pago M&oacute;vil</SelectItem>
+                                        <SelectItem value="Zelle">Zelle</SelectItem>
+                                        <SelectItem value="Binance">Binance</SelectItem>
+                                        <SelectItem value="Cashea">Cashea</SelectItem>
+                                        <SelectItem value="Zinli">Zinli</SelectItem>
+                                        <SelectItem value="Paypal">Paypal</SelectItem>
+                                        <SelectItem value="Efectivo_COP">Efectivo COP</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="flex flex-wrap gap-3">

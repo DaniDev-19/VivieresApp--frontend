@@ -24,6 +24,13 @@ import { SaleTicket } from "@/components/sales/SaleTicket";
 import { SaleInvoice } from "@/components/sales/SaleInvoice";
 import { Pagination } from "@/components/ui/pagination";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { ReturnModal } from "@/components/sales/ReturnModal";
 import { ExchangeModal } from "@/components/sales/ExchangeModal";
 import { ReturnTicket } from "@/components/sales/ReturnTicket";
@@ -55,9 +62,24 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     pending: { label: "Pendiente", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
 };
 
+const paymentMethodConfig: Record<string, { label: string; className: string }> = {
+    Efectivo_BS: { label: "Efectivo BS", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    Efectivo_USD: { label: "Efectivo USD", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+    Pago_Movil: { label: "Pago Móvil", className: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
+    "Pago Móvil": { label: "Pago Móvil", className: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
+    Zelle: { label: "Zelle", className: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
+    Binance: { label: "Binance", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+    Cashea: { label: "Cashea", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
+    Zinli: { label: "Zinli", className: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400" },
+    Paypal: { label: "Paypal", className: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400" },
+    Efectivo_COP: { label: "Efectivo COP", className: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400" },
+    Other: { label: "Otro", className: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400" },
+};
+
 export default function SalesPage() {
     const [search, setSearch] = useState("");
     const [dateFilter, setDateFilter] = useState("");
+    const [paymentMethodFilter, setPaymentMethodFilter] = useState("");
     const [page, setPage] = useState(1);
     const limit = 10;
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -86,11 +108,12 @@ export default function SalesPage() {
 
     // Fetch Sales
     const { data: sales, isLoading, isPlaceholderData } = useQuery<Sale[]>({
-        queryKey: ["sales", page, search, dateFilter],
+        queryKey: ["sales", page, search, dateFilter, paymentMethodFilter],
         queryFn: async () => {
             const params: any = {
                 search: search || undefined,
                 date_filter: dateFilter || undefined,
+                payment_method: paymentMethodFilter || undefined,
                 skip: (page - 1) * limit,
                 limit
             };
@@ -210,6 +233,31 @@ export default function SalesPage() {
                         </button>
                     )}
                 </div>
+                <div className="w-full sm:w-48">
+                    <Select
+                        value={paymentMethodFilter || "all"}
+                        onValueChange={(val) => {
+                            setPaymentMethodFilter(val === "all" ? "" : val);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                            <SelectValue placeholder="Todos los métodos" />
+                        </SelectTrigger>
+                        <SelectContent align="end" position="popper">
+                            <SelectItem value="all">Todos los métodos</SelectItem>
+                            <SelectItem value="Efectivo_USD">Efectivo USD</SelectItem>
+                            <SelectItem value="Efectivo_BS">Efectivo BS</SelectItem>
+                            <SelectItem value="Pago_Movil">Pago Móvil</SelectItem>
+                            <SelectItem value="Zelle">Zelle</SelectItem>
+                            <SelectItem value="Binance">Binance</SelectItem>
+                            <SelectItem value="Cashea">Cashea</SelectItem>
+                            <SelectItem value="Zinli">Zinli</SelectItem>
+                            <SelectItem value="Paypal">Paypal</SelectItem>
+                            <SelectItem value="Efectivo_COP">Efectivo COP</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* Sales Table */}
@@ -222,15 +270,16 @@ export default function SalesPage() {
                                 <th className="px-6 py-4 font-semibold">Fecha</th>
                                 <th className="px-6 py-4 font-semibold">Items</th>
                                 <th className="px-6 py-4 font-semibold">Total</th>
+                                <th className="px-6 py-4 font-semibold">Método de Pago</th>
                                 <th className="px-6 py-4 font-semibold">Estado</th>
                                 <th className="px-6 py-4 font-semibold text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr><td colSpan={6} className="p-8 text-center">Cargando ventas...</td></tr>
+                                <tr><td colSpan={7} className="p-8 text-center">Cargando ventas...</td></tr>
                             ) : sales?.length === 0 ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-gray-500">No hay ventas registradas.</td></tr>
+                                <tr><td colSpan={7} className="p-8 text-center text-gray-500">No hay ventas registradas.</td></tr>
                             ) : (
                                 sales?.map((sale) => {
                                     const st = statusConfig[sale.status] || statusConfig.pending;
@@ -274,6 +323,22 @@ export default function SalesPage() {
     </div>
 </td>
 
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {sale.payments && sale.payments.length > 0 ? (
+                                                        sale.payments.map((p, idx) => {
+                                                            const config = paymentMethodConfig[p.method] || { label: p.method?.replace('_', ' '), className: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400" };
+                                                            return (
+                                                                <span key={idx} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${config.className}`}>
+                                                                    {config.label}
+                                                                </span>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs">-</span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${st.className}`}>
                                                     {st.label}

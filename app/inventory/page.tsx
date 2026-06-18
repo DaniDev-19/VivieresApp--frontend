@@ -12,7 +12,8 @@ import {
     Package,
     AlertTriangle,
     Tags,
-    Filter
+    Filter,
+    FileSpreadsheet
 } from "lucide-react";
 // import { motion, AnimatePresence } from "framer-motion";
 import { getImageUrl } from "@/lib/utils";
@@ -22,6 +23,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ProductForm } from "@/components/inventory/ProductForm";
 import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
 import { CategoryManager } from "@/components/inventory/CategoryManager";
+import { ImportProductsModal } from "@/app/inventory/components/ImportProductsModal";
 import { CategoryFilterSelect } from "@/components/ui/CategoryFilterSelect";
 import {
     Select,
@@ -45,6 +47,7 @@ export default function InventoryPage() {
     const limit = 10;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
     const [detailProduct, setDetailProduct] = useState<Product | null>(null);
@@ -163,6 +166,14 @@ export default function InventoryPage() {
                     >
                         <Tags className="mr-2 h-4 w-4" />
                         Categorías
+                    </button>
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        title="Importar masivamente desde Excel"
+                        className="flex cursor-pointer items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+                    >
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        Importar Excel
                     </button>
                     <button
                         onClick={handleCreate}
@@ -362,6 +373,11 @@ export default function InventoryPage() {
             <CategoryManager
                 isOpen={isCategoryManagerOpen}
                 onClose={() => setIsCategoryManagerOpen(false)}
+            />
+
+            <ImportProductsModal 
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
             />
         </div>
     );
