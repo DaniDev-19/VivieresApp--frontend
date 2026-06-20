@@ -120,8 +120,8 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="Importar Productos" maxWidth="max-w-5xl">
-            <div className="p-4">
+        <Modal isOpen={isOpen} onClose={handleClose} title="Importar Productos">
+            <div className="p-4 max-w-5xl w-full">
                 {step === 1 && (
                     <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                         <FileSpreadsheet className="w-16 h-16 text-gray-400 mb-4" />
@@ -187,49 +187,49 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                                             <tr key={idx} className={`border-b dark:border-gray-700 ${isValid ? 'bg-white dark:bg-gray-900' : 'bg-red-50 dark:bg-red-900/10'}`}>
                                                 <td className="px-3 py-2 font-mono text-xs">{draft.row_index}</td>
                                                 <td className="px-3 py-2">
-                                                    <input 
-                                                        type="text" 
-                                                        value={draft.barcode} 
+                                                    <input
+                                                        type="text"
+                                                        value={draft.barcode}
                                                         onChange={(e) => handleDraftChange(idx, 'barcode', e.target.value)}
                                                         className={`w-full p-1 border rounded ${!draft.barcode.trim() ? 'border-red-300 bg-red-50 dark:border-red-500/50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700 bg-transparent'}`}
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <input 
-                                                        type="text" 
-                                                        value={draft.name} 
+                                                    <input
+                                                        type="text"
+                                                        value={draft.name}
                                                         onChange={(e) => handleDraftChange(idx, 'name', e.target.value)}
                                                         className={`w-full p-1 border rounded ${!draft.name.trim() ? 'border-red-300 bg-red-50 dark:border-red-500/50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700 bg-transparent'}`}
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <input 
+                                                    <input
                                                         type="number" step="0.01" min="0"
-                                                        value={draft.cost_price} 
+                                                        value={draft.cost_price}
                                                         onChange={(e) => handleDraftChange(idx, 'cost_price', parseFloat(e.target.value) || 0)}
                                                         className="w-20 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <input 
+                                                    <input
                                                         type="number" step="0.01" min="0" max="1"
-                                                        value={draft.profit_margin} 
+                                                        value={draft.profit_margin}
                                                         onChange={(e) => handleDraftChange(idx, 'profit_margin', parseFloat(e.target.value) || 0)}
                                                         className="w-16 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <input 
+                                                    <input
                                                         type="number" min="0"
-                                                        value={draft.stock_quantity} 
+                                                        value={draft.stock_quantity}
                                                         onChange={(e) => handleDraftChange(idx, 'stock_quantity', parseInt(e.target.value) || 0)}
                                                         className="w-16 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <input 
+                                                    <input
                                                         type="number" min="0"
-                                                        value={draft.min_stock_level} 
+                                                        value={draft.min_stock_level}
                                                         onChange={(e) => handleDraftChange(idx, 'min_stock_level', parseInt(e.target.value) || 0)}
                                                         className="w-16 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
                                                     />
