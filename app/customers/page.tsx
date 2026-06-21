@@ -159,7 +159,8 @@ export default function CustomersPage() {
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none"
+                    title="Añadir un nuevo cliente"
+                    className="cursor-pointer flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none"
                 >
                     <Plus className="mr-2 h-4 w-4" />
                     Nuevo Cliente

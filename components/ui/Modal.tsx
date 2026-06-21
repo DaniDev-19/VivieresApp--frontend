@@ -9,9 +9,24 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl" | "full";
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+const sizeClasses = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+    "3xl": "max-w-3xl",
+    "4xl": "max-w-4xl",
+    "5xl": "max-w-5xl",
+    "6xl": "max-w-6xl",
+    "7xl": "max-w-7xl",
+    full: "max-w-[95vw]",
+};
+
+export function Modal({ isOpen, onClose, title, children, size = "3xl" }: ModalProps) {
     // Close on Escape
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -20,6 +35,8 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         window.addEventListener("keydown", handleEsc);
         return () => window.removeEventListener("keydown", handleEsc);
     }, [onClose]);
+
+    const maxClass = sizeClasses[size] || "max-w-3xl";
 
     return (
         <AnimatePresence>
@@ -40,7 +57,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
+                            className={`w-full ${maxClass} overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900`}
                         >
                             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-800">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -48,7 +65,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                                 </h3>
                                 <button
                                     onClick={onClose}
-                                    className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                                    className="cursor-pointer rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
                                 >
                                     <X className="h-5 w-5" />
                                 </button>

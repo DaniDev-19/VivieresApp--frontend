@@ -97,7 +97,7 @@ export function CategoryManager({ isOpen, onClose }: CategoryManagerProps) {
                         <button
                             type="submit"
                             disabled={createMutation.isPending}
-                            className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                            className="cursor-pointer flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                         >
                             {createMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -134,7 +134,7 @@ export function CategoryManager({ isOpen, onClose }: CategoryManagerProps) {
                                         <button
                                             type="button"
                                             onClick={() => setDeleteId(cat.id)}
-                                            className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                                            className="cursor-pointer rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                                             title="Eliminar"
                                         >
                                             <Trash2 className="h-4 w-4" />

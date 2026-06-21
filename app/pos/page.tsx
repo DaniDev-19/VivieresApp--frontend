@@ -43,7 +43,7 @@ export default function POSPage() {
   const [page, setPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<number | null>(null);
-  const [showProviderFilter, setShowProviderFilter] = useState(true);
+  const [showProviderFilter, setShowProviderFilter] = useState(false);
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -406,14 +406,14 @@ export default function POSPage() {
                       setPage(1);
                     }}
                   >
-                    <SelectTrigger className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                    <SelectTrigger className="cursor-pointer w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                       <Filter className="h-4.5 w-4.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
                       <SelectValue placeholder="Todos los proveedores" />
                     </SelectTrigger>
                     <SelectContent align="end" position="popper">
-                      <SelectItem value="all">Todos los proveedores</SelectItem>
+                      <SelectItem value="all" className="cursor-pointer">Todos los proveedores</SelectItem>
                       {providers.map((prov) => (
-                        <SelectItem key={prov.id} value={prov.id.toString()}>
+                        <SelectItem key={prov.id} className="cursor-pointer" value={prov.id.toString()}>
                           {prov.name}
                         </SelectItem>
                       ))}

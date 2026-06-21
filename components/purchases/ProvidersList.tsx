@@ -85,8 +85,8 @@ function ProviderForm({ provider, onSuccess, onCancel }: { provider?: Provider, 
                 </label>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-md">Cancelar</button>
-                <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                <button type="button" onClick={onCancel} className="cursor-pointer px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-md">Cancelar</button>
+                <button type="submit" className="cursor-pointer px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
                     {provider ? "Guardar" : "Crear"}
                 </button>
             </div>
@@ -143,7 +143,7 @@ export function ProvidersList() {
             <div className="flex justify-end">
                 <button
                     onClick={handleCreate}
-                    className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
+                    className="cursor-pointer flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors"
                 >
                     <Plus className="w-4 h-4 text-indigo-600" /> Nuevo Proveedor
                 </button>
@@ -172,9 +172,9 @@ export function ProvidersList() {
                                 </div>
                             </div>
                             <div className="flex gap-1">
-                                <button onClick={() => handleWhatsApp(prov)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors" title="Chat WhatsApp"><MessageCircle className="w-4 h-4" /></button>
-                                <button onClick={() => handleEdit(prov)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
-                                <button onClick={() => setConfirmId(prov.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                <button onClick={() => handleWhatsApp(prov)} className="cursor-pointer p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors" title="Chat WhatsApp"><MessageCircle className="w-4 h-4" /></button>
+                                <button onClick={() => handleEdit(prov)} className="cursor-pointer p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" title="Editar proveedor"><Edit className="w-4 h-4" /></button>
+                                <button onClick={() => setConfirmId(prov.id)} className="cursor-pointer p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Eliminar proveedor"><Trash2 className="w-4 h-4" /></button>
                             </div>
                         </div>
 

@@ -120,8 +120,8 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="Importar Productos">
-            <div className="p-4 max-w-5xl w-full">
+        <Modal isOpen={isOpen} onClose={handleClose} title="Importar Productos" size="6xl">
+            <div className="w-full">
                 {step === 1 && (
                     <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                         <FileSpreadsheet className="w-16 h-16 text-gray-400 mb-4" />
@@ -154,7 +154,7 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                 )}
 
                 {step === 2 && (
-                    <div className="flex flex-col space-y-4">
+                    <div className="flex flex-col space-y-6">
                         <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
                             <div className="flex items-center gap-3">
                                 <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -166,18 +166,18 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                             <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{drafts.length} filas detectadas</span>
                         </div>
 
-                        <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl">
-                            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <div className="overflow-x-auto overflow-y-auto max-h-[50vh] border border-gray-200 dark:border-gray-700 rounded-xl">
+                            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-fixed">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-300">
                                     <tr>
-                                        <th className="px-3 py-3">Fila</th>
-                                        <th className="px-3 py-3">Código *</th>
-                                        <th className="px-3 py-3 w-1/3">Nombre *</th>
-                                        <th className="px-3 py-3">Costo ($)</th>
-                                        <th className="px-3 py-3">Margen (%)</th>
-                                        <th className="px-3 py-3">Stock</th>
-                                        <th className="px-3 py-3">Min. Stock</th>
-                                        <th className="px-3 py-3 text-center">Acción</th>
+                                        {/* <th className="px-3 py-3">Fila</th> */}
+                                        <th className="px-3 py-3 w-[180px] min-w-[150px] sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">* Código</th>
+                                        <th className="px-3 py-3 w-[340px] min-w-[240px] sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">* Nombre</th>
+                                        <th className="px-3 py-3 w-[110px] min-w-[90px] sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">Costo ($)</th>
+                                        <th className="px-3 py-3 w-[100px] min-w-[80px] sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">Margen (%)</th>
+                                        <th className="px-3 py-3 w-[90px] min-w-[70px] sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">Stock</th>
+                                        <th className="px-3 py-3 w-[100px] min-w-[80px] sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">Min. Stock</th>
+                                        <th className="px-3 py-3 w-[70px] min-w-[60px] text-center sticky top-0 bg-gray-50 dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -185,13 +185,17 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                                         const isValid = draft.barcode.trim() && draft.name.trim();
                                         return (
                                             <tr key={idx} className={`border-b dark:border-gray-700 ${isValid ? 'bg-white dark:bg-gray-900' : 'bg-red-50 dark:bg-red-900/10'}`}>
-                                                <td className="px-3 py-2 font-mono text-xs">{draft.row_index}</td>
+                                                {/* <td className="px-3 py-2 font-mono text-xs">{draft.row_index}</td> */}
                                                 <td className="px-3 py-2">
                                                     <input
                                                         type="text"
                                                         value={draft.barcode}
                                                         onChange={(e) => handleDraftChange(idx, 'barcode', e.target.value)}
-                                                        className={`w-full p-1 border rounded ${!draft.barcode.trim() ? 'border-red-300 bg-red-50 dark:border-red-500/50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700 bg-transparent'}`}
+                                                        className={`w-full px-2 py-1 text-sm border rounded transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                                            !draft.barcode.trim()
+                                                                ? 'border-red-300 bg-red-50/50 dark:border-red-500/50 dark:bg-red-950/20 text-red-900 dark:text-red-100'
+                                                                : 'border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                                                        }`}
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
@@ -199,7 +203,11 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                                                         type="text"
                                                         value={draft.name}
                                                         onChange={(e) => handleDraftChange(idx, 'name', e.target.value)}
-                                                        className={`w-full p-1 border rounded ${!draft.name.trim() ? 'border-red-300 bg-red-50 dark:border-red-500/50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700 bg-transparent'}`}
+                                                        className={`w-full px-2 py-1 text-sm border rounded transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${
+                                                            !draft.name.trim()
+                                                                ? 'border-red-300 bg-red-50/50 dark:border-red-500/50 dark:bg-red-950/20 text-red-900 dark:text-red-100'
+                                                                : 'border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                                                        }`}
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
@@ -207,7 +215,7 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                                                         type="number" step="0.01" min="0"
                                                         value={draft.cost_price}
                                                         onChange={(e) => handleDraftChange(idx, 'cost_price', parseFloat(e.target.value) || 0)}
-                                                        className="w-20 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
+                                                        className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
@@ -215,7 +223,7 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                                                         type="number" step="0.01" min="0" max="1"
                                                         value={draft.profit_margin}
                                                         onChange={(e) => handleDraftChange(idx, 'profit_margin', parseFloat(e.target.value) || 0)}
-                                                        className="w-16 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
+                                                        className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
@@ -223,7 +231,7 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                                                         type="number" min="0"
                                                         value={draft.stock_quantity}
                                                         onChange={(e) => handleDraftChange(idx, 'stock_quantity', parseInt(e.target.value) || 0)}
-                                                        className="w-16 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
+                                                        className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2">
@@ -231,11 +239,11 @@ export function ImportProductsModal({ isOpen, onClose }: ImportProductsModalProp
                                                         type="number" min="0"
                                                         value={draft.min_stock_level}
                                                         onChange={(e) => handleDraftChange(idx, 'min_stock_level', parseInt(e.target.value) || 0)}
-                                                        className="w-16 p-1 border border-gray-200 dark:border-gray-700 rounded bg-transparent"
+                                                        className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-2 text-center">
-                                                    <button onClick={() => removeDraft(idx)} className="text-gray-400 hover:text-red-500">
+                                                    <button onClick={() => removeDraft(idx)} className="text-gray-400 hover:text-red-500 cursor-pointer">
                                                         <X className="w-4 h-4 mx-auto" />
                                                     </button>
                                                 </td>

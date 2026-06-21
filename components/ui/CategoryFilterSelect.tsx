@@ -40,14 +40,14 @@ export function CategoryFilterSelect({
                         onChange(selectedValue === "all" ? null : parseInt(selectedValue, 10))
                     }
                 >
-                    <SelectTrigger className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                    <SelectTrigger className="cursor-pointer w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                         <Filter className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" />
                         <SelectValue placeholder="Todas las categorías" />
                     </SelectTrigger>
                     <SelectContent align="end" position="popper">
-                        <SelectItem value="all">Todas las categorías</SelectItem>
+                        <SelectItem value="all" className="cursor-pointer">Todas las categorías</SelectItem>
                         {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id.toString()}>
+                            <SelectItem key={cat.id} className="cursor-pointer" value={cat.id.toString()}>
                                 {cat.name}
                             </SelectItem>
                         ))}

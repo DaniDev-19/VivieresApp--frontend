@@ -15,7 +15,6 @@ import {
     Filter,
     FileSpreadsheet
 } from "lucide-react";
-// import { motion, AnimatePresence } from "framer-motion";
 import { getImageUrl } from "@/lib/utils";
 
 import { Modal } from "@/components/ui/Modal";
@@ -32,13 +31,11 @@ import {
     SelectContent,
     SelectItem,
 } from "@/components/ui/select";
-// import { useUIStore } from "@/store/uiStore";
 import { toast } from "sonner";
 import { Product, Category } from "@/types";
 import { Provider } from "@/types";
 import { Pagination } from "@/components/ui/pagination";
 import { useDebounce } from "@/hooks/useDebounce";
-import { FILE } from "dns";
 
 export default function InventoryPage() {
     const queryClient = useQueryClient();
@@ -207,14 +204,14 @@ export default function InventoryPage() {
                                 setPage(1);
                             }}
                         >
-                            <SelectTrigger className="w-full rounded-xl border border-gray-200 bg-white py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
+                            <SelectTrigger className="cursor-pointer w-full rounded-xl border border-gray-200 bg-white py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-gray-800 dark:bg-gray-900 dark:text-white">
                                 <Filter className="h-4.5 w-4.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
                                 <SelectValue placeholder="Todos los proveedores" />
                             </SelectTrigger>
                             <SelectContent align="end" position="popper">
-                                <SelectItem value="all">Todos los proveedores</SelectItem>
+                                <SelectItem value="all" className="cursor-pointer">Todos los proveedores</SelectItem>
                                 {providers.map((provider) => (
-                                    <SelectItem key={provider.id} value={provider.id.toString()}>
+                                    <SelectItem className="cursor-pointer" key={provider.id} value={provider.id.toString()}>
                                         {provider.name}
                                     </SelectItem>
                                 ))}
@@ -285,6 +282,7 @@ export default function InventoryPage() {
                                                     ${product.price_usd?.toFixed(2)}
                                                 </span>
                                                 <span className="text-xs text-gray-400">Costo: ${product.cost_price?.toFixed(2)}</span>
+                                                <span className="text-xs text-orange-400">Oferta: ${product.offer_price_usd?.toFixed(2)}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -375,7 +373,7 @@ export default function InventoryPage() {
                 onClose={() => setIsCategoryManagerOpen(false)}
             />
 
-            <ImportProductsModal 
+            <ImportProductsModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
             />

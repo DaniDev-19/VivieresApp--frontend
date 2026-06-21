@@ -153,14 +153,14 @@ export default function WebOrdersPage() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setSelectedOrder(order)}
-                                    className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                    className="cursor-pointer p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                     title="Ver Detalles"
                                 >
                                     <Eye className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => setConfirmAction({ isOpen: true, type: 'delete', order })}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                    className="cursor-pointer p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                                     title="Eliminar Pedido"
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -215,10 +215,10 @@ export default function WebOrdersPage() {
                                     {order.items?.map((i) => (
                                         <div key={i.id || i.product_id} className="flex justify-between items-center text-xs">
                                             <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
-                                                <span className="font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded flex-shrink-0">{i.quantity}x</span>
+                                                <span className="font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded shrink-0">{i.quantity}x</span>
                                                 <span className="text-gray-600 dark:text-gray-400 truncate">{i.product_name}</span>
                                             </div>
-                                            <span className="font-bold text-indigo-600 dark:text-indigo-400 flex-shrink-0">{formatCurrency(i.price_usd * i.quantity)}</span>
+                                            <span className="font-bold text-indigo-600 dark:text-indigo-400 shrink-0">{formatCurrency(i.price_usd * i.quantity)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -229,7 +229,7 @@ export default function WebOrdersPage() {
                         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => handleWhatsApp(order)}
-                                className="col-span-2 flex items-center justify-center gap-2 bg-[#25D366]/10 text-[#25D366] py-2 rounded-lg font-medium hover:bg-[#25D366]/20 transition-colors"
+                                className="cursor-pointer col-span-2 flex items-center justify-center gap-2 bg-[#25D366]/10 text-[#25D366] py-2 rounded-lg font-medium hover:bg-[#25D366]/20 transition-colors"
                             >
                                 <Phone className="w-4 h-4" /> Contactar WhatsApp
                             </button>

@@ -127,7 +127,7 @@ export default function LoginPage() {
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                                 >
-                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    {showPassword ? <EyeOff className="cursor-pointer h-5 w-5" /> : <Eye className="cursor-pointer h-5 w-5" />}
                                 </button>
                             </div>
                         </div>
@@ -145,7 +145,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex w-full items-center justify-center rounded-lg bg-indigo-600 px-5 py-3 text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 disabled:opacity-50 dark:focus:ring-indigo-800"
+                            className="cursor-pointer flex w-full items-center justify-center rounded-lg bg-indigo-600 px-5 py-3 text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 disabled:opacity-50 dark:focus:ring-indigo-800"
                         >
                             {loading ? (
                                 <>

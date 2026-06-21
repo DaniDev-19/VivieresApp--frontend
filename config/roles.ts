@@ -12,6 +12,7 @@ import {
     ShoppingBag,
     Receipt,
     Truck,
+    Megaphone,
     LucideIcon
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ export const ROLE_PERMISSIONS: NavItem[] = [
     { name: "POS (Venta)", href: "/pos", icon: ScanBarcode, roles: ['admin', 'worker'] },
     { name: "Ventas", href: "/sales", icon: Receipt, roles: ['admin', 'worker'] },
     { name: "Clientes", href: "/customers", icon: Users, roles: ['admin', 'worker'] },
+    { name: "Campañas", href: "/campaigns", icon: Megaphone, roles: ['admin', 'worker'] },
     { name: "Inventario", href: "/inventory", icon: Package, roles: ['admin', 'worker', 'inventory_manager'] },
     { name: "Compras", href: "/purchases", icon: ShoppingBasket, roles: ['admin', 'inventory_manager'] },
     { name: "Pedidos Web", href: "/web-orders", icon: ShoppingBag, roles: ['admin', 'delivery'] },

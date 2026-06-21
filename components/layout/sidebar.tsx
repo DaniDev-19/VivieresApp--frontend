@@ -68,7 +68,7 @@ export function Sidebar() {
             <div className="mt-auto border-t border-gray-200 pt-4 dark:border-gray-800">
                 <button
                     onClick={handleLogout}
-                    className="flex w-full items-center rounded-xl p-3 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="cursor-pointer flex w-full items-center rounded-xl p-3 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                 >
                     <LogOut className="h-5 w-5 shrink-0" />
                     <span className="ml-3">Cerrar Sesión</span>

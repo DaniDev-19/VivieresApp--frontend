@@ -25,11 +25,11 @@ import { SaleInvoice } from "@/components/sales/SaleInvoice";
 import { Pagination } from "@/components/ui/pagination";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
 } from "@/components/ui/select";
 import { ReturnModal } from "@/components/sales/ReturnModal";
 import { ExchangeModal } from "@/components/sales/ExchangeModal";
@@ -221,12 +221,12 @@ export default function SalesPage() {
                         type="date"
                         value={dateFilter}
                         onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
-                        className="w-full sm:w-52 rounded-lg border border-gray-200 bg-gray-50 p-2.5 pl-10 pr-9 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white scheme-dark"
+                        className="w-full sm:w-52 rounded-lg border border-gray-200 bg-gray-50 p-2.5 pl-10 pr-9 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     />
                     {dateFilter && (
                         <button
                             onClick={() => { setDateFilter(""); setPage(1); }}
-                            className="absolute right-2.5 top-2.5 p-0.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+                            className="cursor-pointer absolute right-2.5 top-2.5 p-0.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors"
                             title="Limpiar filtro de fecha"
                         >
                             <X className="h-4 w-4" />
@@ -241,20 +241,20 @@ export default function SalesPage() {
                             setPage(1);
                         }}
                     >
-                        <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                        <SelectTrigger className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                             <SelectValue placeholder="Todos los métodos" />
                         </SelectTrigger>
                         <SelectContent align="end" position="popper">
-                            <SelectItem value="all">Todos los métodos</SelectItem>
-                            <SelectItem value="Efectivo_USD">Efectivo USD</SelectItem>
-                            <SelectItem value="Efectivo_BS">Efectivo BS</SelectItem>
-                            <SelectItem value="Pago_Movil">Pago Móvil</SelectItem>
-                            <SelectItem value="Zelle">Zelle</SelectItem>
-                            <SelectItem value="Binance">Binance</SelectItem>
-                            <SelectItem value="Cashea">Cashea</SelectItem>
-                            <SelectItem value="Zinli">Zinli</SelectItem>
-                            <SelectItem value="Paypal">Paypal</SelectItem>
-                            <SelectItem value="Efectivo_COP">Efectivo COP</SelectItem>
+                            <SelectItem value="all" className="cursor-pointer">Todos los métodos</SelectItem>
+                            <SelectItem value="Efectivo_USD" className="cursor-pointer">Efectivo USD</SelectItem>
+                            <SelectItem value="Efectivo_BS" className="cursor-pointer">Efectivo BS</SelectItem>
+                            <SelectItem value="Pago_Movil" className="cursor-pointer">Pago Móvil</SelectItem>
+                            <SelectItem value="Zelle" className="cursor-pointer">Zelle</SelectItem>
+                            <SelectItem value="Binance" className="cursor-pointer">Binance</SelectItem>
+                            <SelectItem value="Cashea" className="cursor-pointer">Cashea</SelectItem>
+                            <SelectItem value="Zinli" className="cursor-pointer">Zinli</SelectItem>
+                            <SelectItem value="Paypal" className="cursor-pointer">Paypal</SelectItem>
+                            <SelectItem value="Efectivo_COP" className="cursor-pointer">Efectivo COP</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -305,23 +305,23 @@ export default function SalesPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-    		<div className="flex flex-col gap-0.5">
-        {/* Cambiado a (sale as any) para omitir el error de tipos */}
-        <span className={`font-bold ${(sale as any).net_amount_usd !== undefined && (sale as any).net_amount_usd !== sale.total_amount_usd ? 'text-gray-500 text-sm line-through' : 'text-indigo-600 dark:text-indigo-400'}`}>
-            ${sale.total_amount_usd.toFixed(2)}
-        </span>
-        {(sale as any).net_amount_usd !== undefined && (sale as any).net_amount_usd !== sale.total_amount_usd && (
-            <>
-                <span className={`text-xs font-medium ${(sale as any).net_amount_usd < sale.total_amount_usd ? 'text-red-500' : 'text-emerald-500'}`}>
-                    {(sale as any).net_amount_usd < sale.total_amount_usd ? '-' : '+'}${(Math.abs(sale.total_amount_usd - (sale as any).net_amount_usd)).toFixed(2)}
-                </span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                    ${(sale as any).net_amount_usd.toFixed(2)} <span className="text-[10px] font-normal uppercase text-gray-500">Neto</span>
-                </span>
-            </>
-        )}
-    </div>
-</td>
+                                                <div className="flex flex-col gap-0.5">
+                                                    {/* Cambiado a (sale as any) para omitir el error de tipos */}
+                                                    <span className={`font-bold ${(sale as any).net_amount_usd !== undefined && (sale as any).net_amount_usd !== sale.total_amount_usd ? 'text-gray-500 text-sm line-through' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                                        ${sale.total_amount_usd.toFixed(2)}
+                                                    </span>
+                                                    {(sale as any).net_amount_usd !== undefined && (sale as any).net_amount_usd !== sale.total_amount_usd && (
+                                                        <>
+                                                            <span className={`text-xs font-medium ${(sale as any).net_amount_usd < sale.total_amount_usd ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                                {(sale as any).net_amount_usd < sale.total_amount_usd ? '-' : '+'}${(Math.abs(sale.total_amount_usd - (sale as any).net_amount_usd)).toFixed(2)}
+                                                            </span>
+                                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                                                                ${(sale as any).net_amount_usd.toFixed(2)} <span className="text-[10px] font-normal uppercase text-gray-500">Neto</span>
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
 
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-wrap gap-1">
@@ -398,11 +398,10 @@ export default function SalesPage() {
                                                             {/* Returned/Exchanged sale: Ver Devolución/Cambio only */}
                                                             <button
                                                                 onClick={() => setHistorySaleId(sale.id)}
-                                                                className={`cursor-pointer rounded-lg p-2 hover:bg-opacity-20 ${
-                                                                    sale.status === "returned" || sale.status === "partially_returned"
-                                                                        ? "text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                                                                        : "text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
-                                                                }`}
+                                                                className={`cursor-pointer rounded-lg p-2 hover:bg-opacity-20 ${sale.status === "returned" || sale.status === "partially_returned"
+                                                                    ? "text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                                                                    : "text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                                                                    }`}
                                                                 title={sale.status === "returned" || sale.status === "partially_returned" ? "Ver Devolución" : "Ver Cambio"}
                                                             >
                                                                 {sale.status === "returned" || sale.status === "partially_returned" ? (

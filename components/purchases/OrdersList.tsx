@@ -19,6 +19,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: () => void }) {
+    const queryClient = useQueryClient();
     const [providerId, setProviderId] = useState<number | null>(null);
     const [notes, setNotes] = useState("");
 
@@ -60,7 +61,7 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
             const { data } = await api.get("/products", { params });
             return data;
         },
-         placeholderData: (previousData) => previousData,
+        placeholderData: (previousData) => previousData,
     });
 
     const normalize = (value: string) =>
@@ -148,7 +149,11 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                 items: lines
             });
         },
-        onSuccess
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["purchases"] });
+            toast.success("Orden de compra creada correctamente");
+            onSuccess();
+        }
     });
 
     return (
@@ -160,13 +165,13 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                         value={providerId != null ? providerId.toString() : "none"}
                         onValueChange={(value) => setProviderId(value !== "none" ? Number(value) : null)}
                     >
-                        <SelectTrigger className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                        <SelectTrigger className="cursor-pointer w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
                             <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent align="end" position="popper">
-                            <SelectItem value="none">Seleccionar...</SelectItem>
+                            <SelectItem value="none" className="cursor-pointer">Seleccionar...</SelectItem>
                             {(providers as Provider[])?.map(p => (
-                                <SelectItem key={p.id} value={p.id.toString()}>
+                                <SelectItem key={p.id} className="cursor-pointer" value={p.id.toString()}>
                                     {p.name}
                                 </SelectItem>
                             ))}
@@ -194,7 +199,7 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                             type="checkbox"
                             checked={isManual}
                             onChange={e => setIsManual(e.target.checked)}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="cursor-pointer rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         ¿Producto Nuevo / Manual?
                     </label>
@@ -233,13 +238,13 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                                             value={productCategoryFilter != null ? productCategoryFilter.toString() : "none"}
                                             onValueChange={(v) => setProductCategoryFilter(v === "none" ? null : Number(v))}
                                         >
-                                            <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                            <SelectTrigger className="cursor-pointer w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
                                                 <SelectValue placeholder="Categoria (todas)" />
                                             </SelectTrigger>
                                             <SelectContent align="end" position="popper">
-                                                <SelectItem value="none">Todas las categorías</SelectItem>
+                                                <SelectItem value="none" className="cursor-pointer">Todas las categorías</SelectItem>
                                                 {(categories ?? []).map(c => (
-                                                    <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                                                    <SelectItem key={c.id} className="cursor-pointer" value={c.id.toString()}>{c.name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -250,13 +255,13 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                                             value={productProviderFilter != null ? productProviderFilter.toString() : "none"}
                                             onValueChange={(v) => setProductProviderFilter(v === "none" ? null : Number(v))}
                                         >
-                                            <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                            <SelectTrigger className="cursor-pointer w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
                                                 <SelectValue placeholder="Proveedor (todos)" />
                                             </SelectTrigger>
                                             <SelectContent align="end" position="popper">
-                                                <SelectItem value="none">proveedores</SelectItem>
+                                                <SelectItem value="none" className="cursor-pointer">proveedores</SelectItem>
                                                 {(providers ?? []).map((p: any) => (
-                                                    <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                                                    <SelectItem key={p.id} value={p.id.toString()} className="cursor-pointer">{p.name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -267,13 +272,13 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                                             value={stockFilter}
                                             onValueChange={(v: string) => setStockFilter(v as any)}
                                         >
-                                            <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                            <SelectTrigger className="cursor-pointer w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
                                                 <SelectValue placeholder="Stock" />
                                             </SelectTrigger>
                                             <SelectContent align="end" position="popper">
-                                                <SelectItem value="all">Todos</SelectItem>
-                                                <SelectItem value="out">Sin stock (0)</SelectItem>
-                                                <SelectItem value="low">Bajo stock (&lt;5)</SelectItem>
+                                                <SelectItem value="all" className="cursor-pointer">Todos</SelectItem>
+                                                <SelectItem value="out" className="cursor-pointer">Sin stock (0)</SelectItem>
+                                                <SelectItem value="low" className="cursor-pointer">Bajo stock (&lt;5)</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -290,16 +295,16 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                                     value={selectedProd || "none"}
                                     onValueChange={(value) => setSelectedProd(value !== "none" ? value : "")}
                                 >
-                                    <SelectTrigger className="mt-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                                    <SelectTrigger className="cursor-pointer mt-2 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
                                         <SelectValue placeholder="Seleccionar del inventario..." />
                                     </SelectTrigger>
                                     <SelectContent align="end" position="popper">
-                                        <SelectItem value="none">Seleccionar del inventario...</SelectItem>
+                                        <SelectItem value="none" className="cursor-pointer">Seleccionar del inventario...</SelectItem>
                                         {filteredProducts.length === 0 ? (
-                                            <SelectItem value="none">No hay resultados</SelectItem>
+                                            <SelectItem value="none" className="cursor-pointer">No hay resultados</SelectItem>
                                         ) : (
                                             filteredProducts.map(p => (
-                                                <SelectItem key={p.id} value={p.id.toString()}>
+                                                <SelectItem key={p.id} value={p.id.toString()} className="cursor-pointer">
                                                     {p.name} {p.barcode ? `— ${p.barcode}` : ""} (Stock: {p.stock_quantity})
                                                 </SelectItem>
                                             ))
@@ -323,7 +328,7 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
                         <button
                             onClick={handleAddLine}
                             type="button"
-                            className="min-w-[8rem] bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700"
+                            className="cursor-pointer min-w-32 bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700"
                         >
                             Agregar
                         </button>
@@ -367,11 +372,11 @@ function OrderForm({ onSuccess, onCancel }: { onSuccess: () => void, onCancel: (
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t mt-4 border-gray-100">
-                <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
+                <button onClick={onCancel} className="cursor-pointer px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
                 <button
                     onClick={() => mutation.mutate()}
                     disabled={!providerId || lines.length === 0 || mutation.isPending}
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="cursor-pointer px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {mutation.isPending ? "Creando..." : "Crear e Iniciar Orden"}
                 </button>
@@ -397,17 +402,35 @@ function ConversionForm({ item, onSuccess, onCancel }: { item: any, onSuccess: (
 
     const createMutation = useMutation({
         mutationFn: async () => {
-            // 1. Create Product
-            const { data: newProd } = await api.post("/products/", formData);
+            // Check if the barcode already exists in the database
+            const { data: existingProds } = await api.get("/products", {
+                params: { search: formData.barcode }
+            });
 
-            // 2. Link to Purchase Item (We need this endpoint!)
-            // For now, I'll simulate or I need to add that endpoint in next step.
-            // I will assume I will create PUT /purchases/items/{itemId}/link
-            await api.put(`/purchases/items/${item.id}/link`, { product_id: newProd.id });
+            const existing = (existingProds as any[] || []).find(
+                p => p.barcode?.toLowerCase() === formData.barcode.trim().toLowerCase()
+            );
+
+            let productId: number;
+            if (existing) {
+                productId = existing.id;
+                toast.info(`Vinculando al producto existente: "${existing.name}"`);
+            } else {
+                // Create new product
+                const { data: newProd } = await api.post("/products/", formData);
+                productId = newProd.id;
+                toast.success("Producto creado e incorporado al inventario.");
+            }
+
+            // Link to the purchase item
+            await api.put(`/purchases/items/${item.id}/link`, { product_id: productId });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["purchases"] });
             onSuccess();
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.detail || "Error al convertir o vincular el producto.");
         }
     });
 
@@ -461,22 +484,22 @@ function ConversionForm({ item, onSuccess, onCancel }: { item: any, onSuccess: (
                     value={formData.tax_rate.toString()}
                     onValueChange={(value) => setFormData({ ...formData, tax_rate: Number(value) })}
                 >
-                    <SelectTrigger className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
+                    <SelectTrigger className="cursor-pointer w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/15">
                         <SelectValue placeholder="Seleccionar..." />
                     </SelectTrigger>
                     <SelectContent align="end" position="popper">
-                        <SelectItem value="0">Exento (0%)</SelectItem>
-                        <SelectItem value="0.16">Aplica 16%</SelectItem>
+                        <SelectItem value="0" className="cursor-pointer">Exento (0%)</SelectItem>
+                        <SelectItem value="0.16" className="cursor-pointer">Aplica 16%</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-                <button onClick={onCancel} className="text-sm text-gray-500">Cancelar</button>
+                <button onClick={onCancel} className="cursor-pointer text-sm text-gray-500">Cancelar</button>
                 <button
                     onClick={() => createMutation.mutate()}
                     disabled={createMutation.isPending || !formData.barcode}
-                    className="bg-indigo-600 text-white text-sm px-3 py-1.5 rounded hover:bg-indigo-700 disabled:opacity-50"
+                    className="cursor-pointer bg-indigo-600 text-white text-sm px-3 py-1.5 rounded hover:bg-indigo-700 disabled:opacity-50"
                 >
                     {createMutation.isPending ? "Creando..." : "Crear y Vincular"}
                 </button>
@@ -696,7 +719,7 @@ export function OrdersList() {
             <div className="flex justify-end">
                 <button
                     onClick={() => setIsFormOpen(true)}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                    className="cursor-pointer flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" /> Nueva Orden
                 </button>
@@ -904,13 +927,13 @@ function ReceiptForm({ order, onSuccess, onCancel, mutation }: {
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <button onClick={onCancel} className="cursor-pointer px-4 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                     Cancelar
                 </button>
                 <button
                     disabled={mutation.isPending}
                     onClick={handleSubmit}
-                    className="flex  items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                    className="cursor-pointer flex  items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                 >
                     {mutation.isPending ? "Procesando..." : "Confirmar e Ingresar Stock"}
                 </button>

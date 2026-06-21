@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient, keepPreviousData} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -112,7 +112,7 @@ export default function DeliveriesPage() {
             const { data } = await api.get("/deliveries/", { params });
             return data;
         },
-	 placeholderData: keepPreviousData,
+        placeholderData: keepPreviousData,
     });
 
     // 2. Fetch Users (to select a delivery driver)
@@ -158,7 +158,7 @@ export default function DeliveriesPage() {
         enabled: isAdminOrWorker
     });
 
-const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
+    const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
         queryKey: ["products-search", debouncedProductSearch],
         queryFn: async () => {
             if (!debouncedProductSearch.trim()) return [];
@@ -370,14 +370,16 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                         <>
                             <button
                                 onClick={() => setShowReportModal(true)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+                                title="Exportar"
+                                className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 transition-colors"
                             >
                                 <FileText className="h-4 w-4 text-indigo-500" />
                                 Exportar Reporte
                             </button>
                             <button
                                 onClick={() => { resetForm(); setShowModal(true); }}
-                                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                                title="Añadir envio"
+                                className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors shadow-sm"
                             >
                                 <Plus className="h-4 w-4" />
                                 Programar Envío
@@ -445,13 +447,13 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                         id="deliveries-status-filter"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="rounded-lg border border-gray-200 bg-white p-2 text-sm outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                        className="cursor-pointer rounded-lg border border-gray-200 bg-white p-2 text-sm outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     >
-                        <option value="">Todos</option>
-                        <option value="pending">Pendientes</option>
-                        <option value="in_transit">En Ruta</option>
-                        <option value="completed">Completados</option>
-                        <option value="cancelled">Cancelados</option>
+                        <option value="" className="cursor-pointer">Todos</option>
+                        <option value="pending" className="cursor-pointer">Pendientes</option>
+                        <option value="in_transit" className="cursor-pointer">En Ruta</option>
+                        <option value="completed" className="cursor-pointer">Completados</option>
+                        <option value="cancelled" className="cursor-pointer">Cancelados</option>
                     </select>
                 </div>
             </div>
@@ -719,14 +721,14 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                                 value={formData.status}
                                                 onValueChange={(v) => setFormData({ ...formData, status: v })}
                                             >
-                                                <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                                <SelectTrigger className="cursor-pointer w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent align="end" position="popper">
-                                                    <SelectItem value="pending">Pendiente</SelectItem>
-                                                    <SelectItem value="in_transit">En Ruta</SelectItem>
-                                                    <SelectItem value="completed">Completado</SelectItem>
-                                                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                                                    <SelectItem className="cursor-pointer" value="pending">Pendiente</SelectItem>
+                                                    <SelectItem className="cursor-pointer" value="in_transit">En Ruta</SelectItem>
+                                                    <SelectItem className="cursor-pointer" value="completed">Completado</SelectItem>
+                                                    <SelectItem className="cursor-pointer" value="cancelled">Cancelado</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -739,13 +741,13 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                                 value={formData.provider_id || "none"}
                                                 onValueChange={(v) => setFormData({ ...formData, provider_id: v === "none" ? "" : v })}
                                             >
-                                                <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                                <SelectTrigger className="cursor-pointer w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
                                                     <SelectValue placeholder="Seleccionar Proveedor..." />
                                                 </SelectTrigger>
                                                 <SelectContent align="end" position="popper">
-                                                    <SelectItem value="none">Seleccionar Proveedor...</SelectItem>
+                                                    <SelectItem className="cursor-pointer" value="none">Seleccionar Proveedor...</SelectItem>
                                                     {providers.map((prov: any) => (
-                                                        <SelectItem key={prov.id} value={prov.id.toString()}>{prov.name}</SelectItem>
+                                                        <SelectItem key={prov.id} className="cursor-pointer" value={prov.id.toString()}>{prov.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -756,13 +758,13 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                                 value={formData.delivery_user_id || "none"}
                                                 onValueChange={(v) => setFormData({ ...formData, delivery_user_id: v === "none" ? "" : v })}
                                             >
-                                                <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                                <SelectTrigger className="cursor-pointer w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
                                                     <SelectValue placeholder="Seleccionar Repartidor..." />
                                                 </SelectTrigger>
                                                 <SelectContent align="end" position="popper">
-                                                    <SelectItem value="none">Seleccionar Repartidor...</SelectItem>
+                                                    <SelectItem className="cursor-pointer" value="none">Seleccionar Repartidor...</SelectItem>
                                                     {deliveryDrivers.map((driver: any) => (
-                                                        <SelectItem key={driver.id} value={driver.id.toString()}>{driver.username}</SelectItem>
+                                                        <SelectItem key={driver.id} className="cursor-pointer" value={driver.id.toString()}>{driver.username}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -775,13 +777,13 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                             value={formData.sale_id || "none"}
                                             onValueChange={(v) => handleSaleChange(v === "none" ? "" : v)}
                                         >
-                                            <SelectTrigger className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
+                                            <SelectTrigger className="cursor-pointer w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white [&>span]:truncate [&>span]:block [&>span]:text-left">
                                                 <SelectValue placeholder="Seleccionar venta... (Opcional)" />
                                             </SelectTrigger>
                                             <SelectContent align="end" position="popper">
-                                                <SelectItem value="none">Seleccionar venta... (Opcional)</SelectItem>
+                                                <SelectItem className="cursor-pointer" value="none">Seleccionar venta... (Opcional)</SelectItem>
                                                 {todaySales.map((sale: any) => (
-                                                    <SelectItem key={sale.id} value={sale.id.toString()}>
+                                                    <SelectItem key={sale.id} className="cursor-pointer" value={sale.id.toString()}>
                                                         Venta #{sale.id} - {sale.customer_name || "Sin cliente"} (${(sale.total_amount_usd || 0).toFixed(2)})
                                                     </SelectItem>
                                                 ))}
@@ -815,7 +817,7 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                                     onClick={() => { setProductSearch(""); setShowProductDropdown(false); }}
                                                     title="Limpiar búsqueda de productos"
                                                     aria-label="Limpiar búsqueda de productos"
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                    className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </button>
@@ -903,7 +905,7 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                                             }}
                                                             title="Disminuir cantidad"
                                                             aria-label="Disminuir cantidad"
-                                                            className="text-gray-450 hover:text-indigo-600 dark:hover:text-indigo-400"
+                                                            className="cursor-pointer text-gray-450 hover:text-indigo-600 dark:hover:text-indigo-400"
                                                         >
                                                             <MinusCircle className="h-4 w-4" />
                                                         </button>
@@ -921,7 +923,7 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                                             }}
                                                             title="Aumentar cantidad"
                                                             aria-label="Aumentar cantidad"
-                                                            className="text-gray-455 hover:text-indigo-600 dark:hover:text-indigo-400"
+                                                            className="cursor-pointer text-gray-455 hover:text-indigo-600 dark:hover:text-indigo-400"
                                                         >
                                                             <PlusCircle className="h-4 w-4" />
                                                         </button>
@@ -930,7 +932,7 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                                             onClick={() => setSelectedProducts(selectedProducts.filter((p) => p.product_id !== prod.product_id))}
                                                             title="Eliminar producto"
                                                             aria-label="Eliminar producto"
-                                                            className="text-gray-400 hover:text-red-500 ml-1"
+                                                            className="cursor-pointer text-gray-400 hover:text-red-500 ml-1"
                                                         >
                                                             <Trash2 className="h-3.5 w-3.5" />
                                                         </button>
@@ -946,14 +948,14 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                                    className="cursor-pointer rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={createMutation.isPending || updateMutation.isPending}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                                 >
                                     {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin" />}
                                     Guardar Envío
@@ -978,14 +980,14 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteModal(false)}
-                                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                                className="cursor-pointer rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={() => deleteMutation.mutate(deliveryToDelete.id)}
                                 disabled={deleteMutation.isPending}
-                                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                                className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                             >
                                 {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                                 Eliminar
@@ -1049,7 +1051,7 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                             <div className="flex justify-end gap-3">
                                 <button
                                     onClick={() => setCompletingDelivery(null)}
-                                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                                    className="cursor-pointer rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                                 >
                                     Cancelar
                                 </button>
@@ -1085,7 +1087,7 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                 onClick={() => setShowReportModal(false)}
                                 title="Cerrar reporte"
                                 aria-label="Cerrar reporte"
-                                className="text-gray-400 hover:text-gray-500"
+                                className="cursor-pointer text-gray-400 hover:text-gray-500"
                             >
                                 <X className="h-5 w-5" />
                             </button>
@@ -1121,14 +1123,14 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowReportModal(false)}
-                                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-55 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                                className="cursor-pointer rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-55 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={downloadReport}
                                 disabled={exportingReport}
-                                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                                className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                             >
                                 {exportingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                                 Generar PDF
@@ -1152,7 +1154,7 @@ const { data: products = [], isLoading: isLoadingProducts } = useQuery<any[]>({
                                 onClick={() => { setShowDetailModal(false); setDetailDelivery(null); }}
                                 title="Cerrar detalle"
                                 aria-label="Cerrar detalle"
-                                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                                className="cursor-pointer text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
                             >
                                 <X className="h-5 w-5" />
                             </button>

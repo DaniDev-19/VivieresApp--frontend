@@ -44,7 +44,7 @@ export default function PurchasesPage() {
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         />
                     )}
-                    <span className="relative z-10 flex items-center gap-2">
+                    <span className="cursor-pointer relative z-10 flex items-center gap-2">
                         <FileText className="w-4 h-4" /> Pedidos
                     </span>
                 </button>
@@ -65,7 +65,7 @@ export default function PurchasesPage() {
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         />
                     )}
-                    <span className="relative z-10 flex items-center gap-2">
+                    <span className="cursor-pointer relative z-10 flex items-center gap-2">
                         <Truck className="w-4 h-4" /> Proveedores
                     </span>
                 </button>
