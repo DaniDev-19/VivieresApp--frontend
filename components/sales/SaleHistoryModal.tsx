@@ -14,11 +14,13 @@ interface SaleHistoryModalProps {
     saleId: number;
     rates: any;
     onClose: () => void;
+    customerEmail?: string;
 }
 
-export function SaleHistoryModal({ saleId, rates, onClose }: SaleHistoryModalProps) {
+export function SaleHistoryModal({ saleId, rates, onClose, customerEmail }: SaleHistoryModalProps) {
     const [selectedReturn, setSelectedReturn] = useState<Return | null>(null);
     const [selectedExchange, setSelectedExchange] = useState<Exchange | null>(null);
+
     const [deleteReturnId, setDeleteReturnId] = useState<number | null>(null);
     const [deleteExchangeId, setDeleteExchangeId] = useState<number | null>(null);
     const queryClient = useQueryClient();
@@ -279,6 +281,7 @@ export function SaleHistoryModal({ saleId, rates, onClose }: SaleHistoryModalPro
                     returnData={selectedReturn}
                     rates={rates}
                     onClose={() => setSelectedReturn(null)}
+                    customerEmail={customerEmail}
                 />
             )}
 
@@ -287,8 +290,10 @@ export function SaleHistoryModal({ saleId, rates, onClose }: SaleHistoryModalPro
                     exchangeData={selectedExchange}
                     rates={rates}
                     onClose={() => setSelectedExchange(null)}
+                    customerEmail={customerEmail}
                 />
             )}
+
         </>
     );
 }

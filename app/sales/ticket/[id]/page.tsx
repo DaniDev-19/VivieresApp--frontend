@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import { SaleTicket } from "@/components/sales/SaleTicket";
 import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function SaleTicketPage() {
     const params = useParams();

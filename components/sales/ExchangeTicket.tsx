@@ -1,20 +1,62 @@
 "use client";
 
-import React from "react";
-import { Download, X } from "lucide-react";
+import React, { useState } from "react";
+import { Download, X, Mail } from "lucide-react";
 import Barcode from "react-barcode";
 import { QRCodeCanvas } from "qrcode.react";
 import { jsPDF } from "jspdf";
+import axios from "axios";
+import api from "@/lib/api";
+import { toast } from "sonner";
 import type { Exchange } from "@/types";
 
 interface ExchangeTicketProps {
     exchangeData: Exchange;
     rates: any;
     onClose: () => void;
+    customerEmail?: string;
 }
 
-export function ExchangeTicket({ exchangeData, rates, onClose }: ExchangeTicketProps) {
+export function ExchangeTicket({ exchangeData, rates, onClose, customerEmail }: ExchangeTicketProps) {
     const effectiveRate = rates?.BCV || 0;
+
+    const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+    const [emailAddress, setEmailAddress] = useState(customerEmail || "");
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+    const handleSendEmailClick = () => {
+        setEmailAddress(customerEmail || "");
+        setIsEmailDialogOpen(true);
+    };
+
+    const confirmAndSendEmail = async () => {
+        if (!emailAddress) {
+            toast.error("Por favor, ingresa una dirección de correo válida.");
+            return;
+        }
+        setIsSendingEmail(true);
+        const toastId = toast.loading("Preparando y enviando correo...");
+        try {
+            const renderResponse = await axios.post("/api/render-ticket", {
+                type: "exchange",
+                exchangeData,
+                rates
+            });
+            const htmlContent = renderResponse.data.html;
+            await api.post("/emails/send-custom", {
+                email: emailAddress,
+                subject: `Cambio #CAM-${exchangeData.id.toString().padStart(6, "0")}`,
+                html_content: htmlContent
+            });
+            toast.success("Recibo de cambio enviado exitosamente por correo.", { id: toastId });
+            setIsEmailDialogOpen(false);
+        } catch (error: any) {
+            const detail = error.response?.data?.detail || error.message || "Error desconocido";
+            toast.error(`Error al enviar correo: ${detail}`, { id: toastId });
+        } finally {
+            setIsSendingEmail(false);
+        }
+    };
 
     const handleDownloadPDF = () => {
         const doc = new jsPDF({
@@ -192,6 +234,15 @@ export function ExchangeTicket({ exchangeData, rates, onClose }: ExchangeTicketP
             <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
                 <div className="absolute -top-12 right-0 flex gap-2">
                     <button
+                        onClick={handleSendEmailClick}
+                        disabled={isSendingEmail}
+                        className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 shadow-lg transition-colors disabled:opacity-50"
+                        title="Enviar recibo de cambio por correo"
+                    >
+                        <Mail className="h-4 w-4" />
+                        Enviar Correo
+                    </button>
+                    <button
                         onClick={handleDownloadPDF}
                         className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 shadow-lg transition-colors"
                     >
@@ -334,6 +385,43 @@ export function ExchangeTicket({ exchangeData, rates, onClose }: ExchangeTicketP
                     </div>
                 </div>
             </div>
+
+            {/* Modal de envío de correo */}
+            {isEmailDialogOpen && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl border border-gray-100 dark:bg-gray-900 dark:border-gray-800">
+                        <h4 className="text-sm font-bold mb-2.5 flex items-center gap-1.5 text-gray-900 dark:text-white">
+                            <Mail className="h-4 w-4 text-amber-500" />
+                            Enviar Cambio por Correo
+                        </h4>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 leading-normal">
+                            Confirma o ingresa el correo electrónico para enviar el recibo del cambio de producto.
+                        </p>
+                        <input
+                            type="email"
+                            value={emailAddress}
+                            onChange={(e) => setEmailAddress(e.target.value)}
+                            placeholder="cliente@correo.com"
+                            className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-xs outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white mb-4"
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsEmailDialogOpen(false)}
+                                className="flex-1 rounded-xl bg-gray-100 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmAndSendEmail}
+                                disabled={isSendingEmail || !emailAddress}
+                                className="flex-1 rounded-xl bg-amber-600 py-2.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                            >
+                                {isSendingEmail ? "Enviando..." : "Enviar"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

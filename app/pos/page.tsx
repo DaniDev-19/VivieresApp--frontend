@@ -259,8 +259,11 @@ export default function POSPage() {
         ...saleData,
         items: enrichedItems,
         customer_name: selectedCustomer?.name || saleData.customer_name || "",
-        customer_cedula: selectedCustomer?.cedula || saleData.customer_cedula || ""
+        customer_cedula: selectedCustomer?.cedula || saleData.customer_cedula || "",
+        customer_email: selectedCustomer?.email || saleData.customer_email || "",
+        customer_phone: selectedCustomer?.phone || saleData.customer_phone || ""
       };
+
 
       clearCart();
       setCompletedSale(enrichedSale);

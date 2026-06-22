@@ -52,7 +52,16 @@ interface Sale {
     customer_name?: string;
     customer_phone?: string;
     customer_cedula?: string;
+    customer_email?: string;
+    customer?: {
+        id: number;
+        name: string;
+        cedula: string;
+        phone: string;
+        email?: string;
+    } | null;
 }
+
 
 const statusConfig: Record<string, { label: string; className: string }> = {
     completed: { label: "Completada", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
@@ -80,7 +89,9 @@ export default function SalesPage() {
     const [search, setSearch] = useState("");
     const [dateFilter, setDateFilter] = useState("");
     const [paymentMethodFilter, setPaymentMethodFilter] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
     const [page, setPage] = useState(1);
+
     const limit = 10;
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [saleToDelete, setSaleToDelete] = useState<number | null>(null);
@@ -106,14 +117,14 @@ export default function SalesPage() {
         },
     });
 
-    // Fetch Sales
     const { data: sales, isLoading, isPlaceholderData } = useQuery<Sale[]>({
-        queryKey: ["sales", page, search, dateFilter, paymentMethodFilter],
+        queryKey: ["sales", page, search, dateFilter, paymentMethodFilter, statusFilter],
         queryFn: async () => {
             const params: any = {
                 search: search || undefined,
                 date_filter: dateFilter || undefined,
                 payment_method: paymentMethodFilter || undefined,
+                status: statusFilter || undefined,
                 skip: (page - 1) * limit,
                 limit
             };
@@ -123,6 +134,7 @@ export default function SalesPage() {
         staleTime: 1000 * 60 * 2,
         placeholderData: (previousData) => previousData,
     });
+
 
 
     const deleteMutation = useMutation({
@@ -258,7 +270,28 @@ export default function SalesPage() {
                         </SelectContent>
                     </Select>
                 </div>
+                <div className="w-full sm:w-48">
+                    <Select
+                        value={statusFilter || "all"}
+                        onValueChange={(val) => {
+                            setStatusFilter(val === "all" ? "" : val);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="cursor-pointer w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                            <SelectValue placeholder="Todos los estados" />
+                        </SelectTrigger>
+                        <SelectContent align="end" position="popper">
+                            <SelectItem value="all" className="cursor-pointer">Todos los estados</SelectItem>
+                            <SelectItem value="completed" className="cursor-pointer">Ventas Completadas</SelectItem>
+                            <SelectItem value="returned" className="cursor-pointer">Devoluciones</SelectItem>
+                            <SelectItem value="exchanged" className="cursor-pointer">Cambios</SelectItem>
+                            <SelectItem value="pending" className="cursor-pointer">Parcialmente pagadas</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
+
 
             {/* Sales Table */}
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -483,6 +516,10 @@ export default function SalesPage() {
                     returnData={selectedReturn}
                     rates={rates}
                     onClose={() => setSelectedReturn(null)}
+                    customerEmail={
+                        sales?.find(s => s.id === selectedReturn.sale_id)?.customer_email ||
+                        sales?.find(s => s.id === selectedReturn.sale_id)?.customer?.email
+                    }
                 />
             )}
 
@@ -492,6 +529,10 @@ export default function SalesPage() {
                     exchangeData={selectedExchange}
                     rates={rates}
                     onClose={() => setSelectedExchange(null)}
+                    customerEmail={
+                        sales?.find(s => s.id === selectedExchange.sale_id)?.customer_email ||
+                        sales?.find(s => s.id === selectedExchange.sale_id)?.customer?.email
+                    }
                 />
             )}
 
@@ -501,8 +542,13 @@ export default function SalesPage() {
                     saleId={historySaleId}
                     rates={rates}
                     onClose={() => setHistorySaleId(null)}
+                    customerEmail={
+                        sales?.find(s => s.id === historySaleId)?.customer_email ||
+                        sales?.find(s => s.id === historySaleId)?.customer?.email
+                    }
                 />
             )}
+
 
             {/* Confirm Delete Modal */}
             <ConfirmModal

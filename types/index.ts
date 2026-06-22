@@ -84,9 +84,25 @@ export interface Delivery {
 export interface Sale {
     id: number;
     total_amount_usd: number;
+    total_tax_usd?: number;
+    delivery_amount_usd?: number;
     status: string;
     created_at: string;
+    items?: any[];
+    payments?: any[];
+    customer_name?: string;
+    customer_cedula?: string;
+    customer_phone?: string;
+    customer_email?: string;
+    customer?: {
+        id: number;
+        name: string;
+        cedula: string;
+        phone: string;
+        email?: string;
+    } | null;
 }
+
 
 export interface WebOrderItem {
     id: number;
