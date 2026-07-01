@@ -231,7 +231,7 @@ export function ExchangeTicket({ exchangeData, rates, onClose, customerEmail }: 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] flex flex-col">
                 <div className="absolute -top-12 right-0 flex gap-2">
                     <button
                         onClick={handleSendEmailClick}
@@ -257,130 +257,132 @@ export function ExchangeTicket({ exchangeData, rates, onClose, customerEmail }: 
                     </button>
                 </div>
 
-                <div className="ticket-body flex flex-col items-center text-center font-mono text-[11px] text-black leading-tight">
-                    <div className="mb-2 w-full">
-                        <h2 className="text-xl font-bold uppercase tracking-widest mb-1">{process.env.NEXT_PUBLIC_BUSINESS_NAME || "Víveres App"}</h2>
-                        <h3 className="text-lg font-bold uppercase text-amber-600 mb-1">CAMBIO</h3>
-                        <p className="text-[10px] text-gray-500 italic mb-2">{process.env.NEXT_PUBLIC_BUSINESS_DESCRIPTION || "\"Calidad y servicio a tu puerta\""}</p>
-                        <div className="border-y border-dashed border-gray-400 py-1 uppercase font-bold text-[9px]">
-                            RIF: {process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"} <br /> REF: {process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}
-                        </div>
-                    </div>
-
-                    <div className="flex w-full justify-between items-center my-2 text-[10px]">
-                        <span className="font-bold text-amber-600">#CAM-{exchangeData.id.toString().padStart(6, '0')}</span>
-                        <span>{new Date(exchangeData.created_at).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                    </div>
-
-                    <div className="w-full bg-amber-50 border border-amber-200 rounded p-1.5 mb-2 text-left">
-                        <div className="text-[9px] font-bold">VENTA ORIGINAL: #{exchangeData.sale_id.toString().padStart(6, '0')}</div>
-                    </div>
-
-                    {exchangeData.reason && (
-                        <div className="w-full text-[9px] mb-1 text-left">
-                            <span className="font-bold">MOTIVO: </span>
-                            <span>{exchangeData.reason}</span>
-                        </div>
-                    )}
-
-                    <div className="w-full border-b border-dashed border-gray-400 pb-1 mb-1">
-                        <div className="text-[9px] font-bold text-red-600 mb-1 text-left">DEVUELTOS POR CLIENTE</div>
-                        <div className="flex w-full text-[9px] font-bold border-b border-gray-300 mb-1 pb-1">
-                            <span className="w-[45%] text-left">PRODUCTO</span>
-                            <span className="w-[10%] text-center">CNT</span>
-                            <span className="w-[45%] text-right">SUBTOTAL</span>
-                        </div>
-                        {exchangeData.items_out.map((item, idx) => (
-                            <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
-                                <div className="flex w-full justify-between">
-                                    <span className="w-[45%] text-left wrap-break-word pr-1 font-medium">{item.product_name || `Item #${item.product_id}`}</span>
-                                    <span className="w-[10%] text-center">{item.quantity}</span>
-                                    <span className="w-[45%] text-right font-bold">${item.subtotal_usd.toFixed(2)}</span>
-                                </div>
-                                {item.barcode && (
-                                    <div className="flex w-full justify-between">
-                                        <span className="w-[45%] text-left text-[8px] italic text-gray-500">Código: {item.barcode}</span>
-                                    </div>
-                                )}
-                                <div className="flex w-full justify-end">
-                                    <span className="text-[8px] text-gray-500 italic">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.subtotal_usd * effectiveRate)}</span>
-                                </div>
+                <div className="overflow-y-auto pr-1 flex-1 min-h-0 custom-scrollbar">
+                    <div className="ticket-body flex flex-col items-center text-center font-mono text-[11px] text-black leading-tight">
+                        <div className="mb-2 w-full">
+                            <h2 className="text-xl font-bold uppercase tracking-widest mb-1">{process.env.NEXT_PUBLIC_BUSINESS_NAME || "Víveres App"}</h2>
+                            <h3 className="text-lg font-bold uppercase text-amber-600 mb-1">CAMBIO</h3>
+                            <p className="text-[10px] text-gray-500 italic mb-2">{process.env.NEXT_PUBLIC_BUSINESS_DESCRIPTION || "\"Calidad y servicio a tu puerta\""}</p>
+                            <div className="border-y border-dashed border-gray-400 py-1 uppercase font-bold text-[9px]">
+                                RIF: {process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"} <br /> REF: {process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}
                             </div>
-                        ))}
-                    </div>
-
-                    <div className="w-full border-b border-dashed border-gray-400 pb-1 mb-1">
-                        <div className="text-[9px] font-bold text-green-600 mb-1 text-left">ENTREGADOS AL CLIENTE</div>
-                        <div className="flex w-full text-[9px] font-bold border-b border-gray-300 mb-1 pb-1">
-                            <span className="w-[45%] text-left">PRODUCTO</span>
-                            <span className="w-[10%] text-center">CNT</span>
-                            <span className="w-[45%] text-right">SUBTOTAL</span>
                         </div>
-                        {exchangeData.items_in.map((item, idx) => (
-                            <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
-                                <div className="flex w-full justify-between">
-                                    <span className="w-[45%] text-left wrap-break-word pr-1 font-medium">{item.product_name || `Item #${item.product_id}`}</span>
-                                    <span className="w-[10%] text-center">{item.quantity}</span>
-                                    <span className="w-[45%] text-right font-bold">${item.subtotal_usd.toFixed(2)}</span>
-                                </div>
-                                {item.barcode && (
-                                    <div className="flex w-full justify-between">
-                                        <span className="w-[45%] text-left text-[8px] italic text-gray-500">Código: {item.barcode}</span>
-                                    </div>
-                                )}
-                                <div className="flex w-full justify-end">
-                                    <span className="text-[8px] text-gray-500 italic">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.subtotal_usd * effectiveRate)}</span>
-                                </div>
+
+                        <div className="flex w-full justify-between items-center my-2 text-[10px]">
+                            <span className="font-bold text-amber-600">#CAM-{exchangeData.id.toString().padStart(6, '0')}</span>
+                            <span>{new Date(exchangeData.created_at).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                        </div>
+
+                        <div className="w-full bg-amber-50 border border-amber-200 rounded p-1.5 mb-2 text-left">
+                            <div className="text-[9px] font-bold">VENTA ORIGINAL: #{exchangeData.sale_id.toString().padStart(6, '0')}</div>
+                        </div>
+
+                        {exchangeData.reason && (
+                            <div className="w-full text-[9px] mb-1 text-left">
+                                <span className="font-bold">MOTIVO: </span>
+                                <span>{exchangeData.reason}</span>
                             </div>
-                        ))}
-                    </div>
+                        )}
 
-                    <div className="w-full flex justify-between items-center mt-2 border-t-2 border-amber-400 pt-2">
-                        <span className={`text-[12px] font-black ${exchangeData.total_difference_usd >= 0 ? 'text-green-600' : 'text-red-600'} uppercase`}>
-                            {exchangeData.total_difference_usd >= 0 ? 'DIFERENCIA A FAVOR:' : 'DIFERENCIA A PAGAR:'}
-                        </span>
-                        <div className="text-right">
-                            <span className={`block text-[14px] font-black ${exchangeData.total_difference_usd >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                ${Math.abs(exchangeData.total_difference_usd).toFixed(2)}
+                        <div className="w-full border-b border-dashed border-gray-400 pb-1 mb-1">
+                            <div className="text-[9px] font-bold text-red-600 mb-1 text-left">DEVUELTOS POR CLIENTE</div>
+                            <div className="flex w-full text-[9px] font-bold border-b border-gray-300 mb-1 pb-1">
+                                <span className="w-[45%] text-left">PRODUCTO</span>
+                                <span className="w-[10%] text-center">CNT</span>
+                                <span className="w-[45%] text-right">SUBTOTAL</span>
+                            </div>
+                            {exchangeData.items_out.map((item, idx) => (
+                                <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
+                                    <div className="flex w-full justify-between">
+                                        <span className="w-[45%] text-left wrap-break-word pr-1 font-medium">{item.product_name || `Item #${item.product_id}`}</span>
+                                        <span className="w-[10%] text-center">{item.quantity}</span>
+                                        <span className="w-[45%] text-right font-bold">${item.subtotal_usd.toFixed(2)}</span>
+                                    </div>
+                                    {item.barcode && (
+                                        <div className="flex w-full justify-between">
+                                            <span className="w-[45%] text-left text-[8px] italic text-gray-500">Código: {item.barcode}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex w-full justify-end">
+                                        <span className="text-[8px] text-gray-500 italic">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.subtotal_usd * effectiveRate)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="w-full border-b border-dashed border-gray-400 pb-1 mb-1">
+                            <div className="text-[9px] font-bold text-green-600 mb-1 text-left">ENTREGADOS AL CLIENTE</div>
+                            <div className="flex w-full text-[9px] font-bold border-b border-gray-300 mb-1 pb-1">
+                                <span className="w-[45%] text-left">PRODUCTO</span>
+                                <span className="w-[10%] text-center">CNT</span>
+                                <span className="w-[45%] text-right">SUBTOTAL</span>
+                            </div>
+                            {exchangeData.items_in.map((item, idx) => (
+                                <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
+                                    <div className="flex w-full justify-between">
+                                        <span className="w-[45%] text-left wrap-break-word pr-1 font-medium">{item.product_name || `Item #${item.product_id}`}</span>
+                                        <span className="w-[10%] text-center">{item.quantity}</span>
+                                        <span className="w-[45%] text-right font-bold">${item.subtotal_usd.toFixed(2)}</span>
+                                    </div>
+                                    {item.barcode && (
+                                        <div className="flex w-full justify-between">
+                                            <span className="w-[45%] text-left text-[8px] italic text-gray-500">Código: {item.barcode}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex w-full justify-end">
+                                        <span className="text-[8px] text-gray-500 italic">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(item.subtotal_usd * effectiveRate)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="w-full flex justify-between items-center mt-2 border-t-2 border-amber-400 pt-2">
+                            <span className={`text-[12px] font-black ${exchangeData.total_difference_usd >= 0 ? 'text-green-600' : 'text-red-600'} uppercase`}>
+                                {exchangeData.total_difference_usd >= 0 ? 'DIFERENCIA A FAVOR:' : 'DIFERENCIA A PAGAR:'}
                             </span>
-                            <span className="block text-[10px] font-bold text-gray-700">
-                                Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(Math.abs(exchangeData.total_difference_usd) * effectiveRate)}
-                            </span>
+                            <div className="text-right">
+                                <span className={`block text-[14px] font-black ${exchangeData.total_difference_usd >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    ${Math.abs(exchangeData.total_difference_usd).toFixed(2)}
+                                </span>
+                                <span className="block text-[10px] font-bold text-gray-700">
+                                    Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(Math.abs(exchangeData.total_difference_usd) * effectiveRate)}
+                                </span>
+                            </div>
                         </div>
-                    </div>
 
-                    {exchangeData.payment_method && exchangeData.total_difference_usd > 0 && (
-                        <div className="w-full mt-1 text-[9px] text-left">
-                            <span className="font-bold">PAGADO CON: </span>
-                            <span>{exchangeData.payment_method.replace('_', ' ').toUpperCase()}</span>
-                        </div>
-                    )}
+                        {exchangeData.payment_method && exchangeData.total_difference_usd > 0 && (
+                            <div className="w-full mt-1 text-[9px] text-left">
+                                <span className="font-bold">PAGADO CON: </span>
+                                <span>{exchangeData.payment_method.replace('_', ' ').toUpperCase()}</span>
+                            </div>
+                        )}
 
-                    <div className="w-full mt-4 flex flex-col items-center gap-2 pt-2 border-t border-dashed border-gray-400">
-                        <div id="exchange-ticket-barcode" className="scale-90 origin-center">
-                            <Barcode
-                                value={`CAM-${exchangeData.id.toString().padStart(10, '0')}`}
-                                width={1.2}
-                                height={30}
-                                fontSize={10}
-                                displayValue={false}
-                                renderer="canvas"
-                            />
-                        </div>
-                        <div id="exchange-ticket-qr" className="mt-1 flex flex-col items-center">
-                            <QRCodeCanvas
-                                value={JSON.stringify({
-                                    id: exchangeData.id,
-                                    type: 'exchange',
-                                    sale_id: exchangeData.sale_id,
-                                    difference: exchangeData.total_difference_usd,
-                                    date: exchangeData.created_at
-                                })}
-                                size={60}
-                                level="M"
-                            />
-                            <p className="text-[8px] text-gray-400 mt-1">Escanea para verificar</p>
-                            <p className="text-[7px] text-gray-300 mt-2 font-bold uppercase tracking-widest">Powered by ViveresApp</p>
+                        <div className="w-full mt-4 flex flex-col items-center gap-2 pt-2 border-t border-dashed border-gray-400">
+                            <div id="exchange-ticket-barcode" className="scale-90 origin-center">
+                                <Barcode
+                                    value={`CAM-${exchangeData.id.toString().padStart(10, '0')}`}
+                                    width={1.2}
+                                    height={30}
+                                    fontSize={10}
+                                    displayValue={false}
+                                    renderer="canvas"
+                                />
+                            </div>
+                            <div id="exchange-ticket-qr" className="mt-1 flex flex-col items-center">
+                                <QRCodeCanvas
+                                    value={JSON.stringify({
+                                        id: exchangeData.id,
+                                        type: 'exchange',
+                                        sale_id: exchangeData.sale_id,
+                                        difference: exchangeData.total_difference_usd,
+                                        date: exchangeData.created_at
+                                    })}
+                                    size={60}
+                                    level="M"
+                                />
+                                <p className="text-[8px] text-gray-400 mt-1">Escanea para verificar</p>
+                                <p className="text-[7px] text-gray-300 mt-2 font-bold uppercase tracking-widest">Powered by ViveresApp</p>
+                            </div>
                         </div>
                     </div>
                 </div>

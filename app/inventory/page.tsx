@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "@/lib/api";
+import Link from "next/link";
 import {
     Plus,
     Search,
@@ -13,7 +11,9 @@ import {
     AlertTriangle,
     Tags,
     Filter,
-    FileSpreadsheet
+    FileSpreadsheet,
+    Activity,
+    Sliders
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 
@@ -37,10 +37,22 @@ import { Provider } from "@/types";
 import { Pagination } from "@/components/ui/pagination";
 import { useDebounce } from "@/hooks/useDebounce";
 
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
+
 export default function InventoryPage() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
+
+    // Adjust stock states
+    const [isAdjustStockOpen, setIsAdjustStockOpen] = useState(false);
+    const [productToAdjust, setProductToAdjust] = useState<Product | null>(null);
+    const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
+    const [adjustmentNotes, setAdjustmentNotes] = useState<string>("");
+    const [isAdjusting, setIsAdjusting] = useState(false);
+    const [adjustmentDirection, setAdjustmentDirection] = useState<"in" | "out">("in");
     const limit = 10;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -134,6 +146,40 @@ export default function InventoryPage() {
         setIsModalOpen(true);
     };
 
+    const handleAdjustStockClick = (product: Product) => {
+        setProductToAdjust(product);
+        setAdjustmentQuantity(0);
+        setAdjustmentNotes("");
+        setAdjustmentDirection("in");
+        setIsAdjustStockOpen(true);
+    };
+
+    const handleAdjustStockConfirm = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!productToAdjust || adjustmentQuantity <= 0) {
+            toast.error("Por favor ingresa una cantidad válida mayor a 0");
+            return;
+        }
+
+        setIsAdjusting(true);
+        try {
+            const finalQty = adjustmentDirection === "in" ? adjustmentQuantity : -adjustmentQuantity;
+            await api.post("/inventory/adjust", {
+                product_id: productToAdjust.id,
+                quantity_change: finalQty,
+                notes: adjustmentNotes || undefined
+            });
+            toast.success("Ajuste de inventario realizado correctamente");
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            setIsAdjustStockOpen(false);
+        } catch (error: any) {
+            console.error("Error adjusting stock:", error);
+            toast.error(error.response?.data?.detail || "Error al ajustar el inventario");
+        } finally {
+            setIsAdjusting(false);
+        }
+    };
+
     const handleEdit = (product: Product) => {
         setSelectedProduct(product);
         setIsModalOpen(true);
@@ -155,7 +201,15 @@ export default function InventoryPage() {
                         Gestiona tus productos y existencias
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
+                    <Link
+                        href="/inventory/movements"
+                        title="Ver historial de movimientos y Kardex"
+                        className="flex cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                    >
+                        <Activity className="mr-2 h-4 w-4 text-indigo-600" />
+                        Kardex / Movimientos
+                    </Link>
                     <button
                         onClick={() => setIsCategoryManagerOpen(true)}
                         title="Gestionar categorías"
@@ -310,6 +364,13 @@ export default function InventoryPage() {
                                                     <Eye className="h-4 w-4" />
                                                 </button>
                                                 <button
+                                                    onClick={() => handleAdjustStockClick(product)}
+                                                    className="cursor-pointer rounded-lg p-2 text-gray-500 hover:bg-amber-50 hover:text-amber-600 dark:text-gray-400 dark:hover:bg-amber-900/20"
+                                                    title="Ajustar Stock (Kardex)"
+                                                >
+                                                    <Sliders className="h-4 w-4" />
+                                                </button>
+                                                <button
                                                     onClick={() => handleEdit(product)}
                                                     className="cursor-pointer rounded-lg p-2 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-indigo-900/20"
                                                     title="Editar"
@@ -377,6 +438,100 @@ export default function InventoryPage() {
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
             />
+
+            <Modal
+                isOpen={isAdjustStockOpen}
+                onClose={() => setIsAdjustStockOpen(false)}
+                title="Ajustar Stock de Inventario"
+            >
+                {productToAdjust && (
+                    <form onSubmit={handleAdjustStockConfirm} className="space-y-4">
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-800">
+                            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                {productToAdjust.image_url ? (
+                                    <img src={getImageUrl(productToAdjust.image_url)!} alt={productToAdjust.name} className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-gray-400">
+                                        <Package className="h-5 w-5" />
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900 dark:text-white text-sm">{productToAdjust.name}</h4>
+                                <p className="text-xs text-gray-500">Stock Actual: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{productToAdjust.stock_quantity} unidades</span></p>
+                            </div>
+                        </div>
+
+                        {/* Dirección del Ajuste */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase">Tipo de Ajuste</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setAdjustmentDirection("in")}
+                                    className={`flex items-center justify-center py-2 px-4 rounded-xl border text-sm font-semibold transition-all ${adjustmentDirection === "in" ? "bg-green-50 text-green-700 border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" : "bg-white text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-800"}`}
+                                >
+                                    🟢 Entrada (+)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAdjustmentDirection("out")}
+                                    className={`flex items-center justify-center py-2 px-4 rounded-xl border text-sm font-semibold transition-all ${adjustmentDirection === "out" ? "bg-red-50 text-red-700 border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800" : "bg-white text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-800"}`}
+                                >
+                                    🔴 Salida (-)
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Cantidad */}
+                        <div>
+                            <label htmlFor="adjust-qty" className="block text-xs font-semibold text-gray-500 mb-1 uppercase">Cantidad de Unidades</label>
+                            <input
+                                id="adjust-qty"
+                                type="number"
+                                min="1"
+                                required
+                                value={adjustmentQuantity || ""}
+                                onChange={(e) => setAdjustmentQuantity(Math.max(1, Number(e.target.value)))}
+                                placeholder="Ej. 10"
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
+                            />
+                        </div>
+
+                        {/* Motivo */}
+                        <div>
+                            <label htmlFor="adjust-notes" className="block text-xs font-semibold text-gray-500 mb-1 uppercase">Motivo / Notas del Ajuste</label>
+                            <textarea
+                                id="adjust-notes"
+                                rows={3}
+                                required
+                                value={adjustmentNotes}
+                                onChange={(e) => setAdjustmentNotes(e.target.value)}
+                                placeholder="Ej. Corrección por inventario físico anual, merma, entrada especial, etc..."
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 resize-none"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 justify-end pt-2">
+                            <button
+                                type="button"
+                                disabled={isAdjusting}
+                                onClick={() => setIsAdjustStockOpen(false)}
+                                className="py-2.5 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isAdjusting}
+                                className="py-2.5 px-5 rounded-xl bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                            >
+                                {isAdjusting ? "Ajustando..." : "Confirmar Ajuste"}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
         </div>
     );
 }

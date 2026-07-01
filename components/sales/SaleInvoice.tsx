@@ -35,14 +35,7 @@ export function SaleInvoice({ sale, rates, onClose }: SaleInvoiceProps) {
         const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || "VIVERES APP";
         doc.text(businessName.toUpperCase(), 20, 25);
 
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`RIF: ${process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"}`, 20, 32);
-        doc.text(`Teléfono: ${process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}`, 20, 37);
-        doc.text(`Dirección: ${process.env.NEXT_PUBLIC_BUSINESS_ADDRESS || "Venezuela"}`, 20, 42);
-        doc.text(`Email: ${process.env.NEXT_PUBLIC_BUSINESS_EMAIL || ""}`, 20, 47);
-
-        // Invoice Info
+        // Right side: Invoice Info (independent fixed positions)
         doc.setTextColor(0);
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
@@ -54,21 +47,54 @@ export function SaleInvoice({ sale, rates, onClose }: SaleInvoiceProps) {
         doc.text(`Fecha: ${new Date(sale.created_at).toLocaleDateString('es-VE')}`, pageWidth - 20, 37, { align: "right" });
         doc.text(`Hora: ${new Date(sale.created_at).toLocaleTimeString('es-VE')}`, pageWidth - 20, 42, { align: "right" });
 
+        // Left side: Business Info with dynamic Y and wrapping
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        
+        let leftY = 32;
+        doc.text(`RIF: ${process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"}`, 20, leftY);
+        leftY += 5;
+        doc.text(`Teléfono: ${process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}`, 20, leftY);
+        leftY += 5;
+
+        // Wrap address to width of 100mm to leave room for the right column
+        const addressText = `Dirección: ${process.env.NEXT_PUBLIC_BUSINESS_ADDRESS || "Venezuela"}`;
+        const addressLines = doc.splitTextToSize(addressText, 100);
+        doc.text(addressLines, 20, leftY);
+        leftY += addressLines.length * 4.5; // shift down by lines count times line height
+
+        const businessEmail = process.env.NEXT_PUBLIC_BUSINESS_EMAIL;
+        if (businessEmail) {
+            doc.text(`Email: ${businessEmail}`, 20, leftY);
+            leftY += 5;
+        }
+
+        // Draw line below the highest elements
+        const dividerY = Math.max(leftY + 2, 48);
         doc.setLineWidth(0.5);
         doc.setDrawColor(200);
-        doc.line(20, 48, pageWidth - 20, 48);
+        doc.line(20, dividerY, pageWidth - 20, dividerY);
+
+        const offset = dividerY - 48; // Shift all subsequent hardcoded Y values by this offset
 
         // --- Client Info ---
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.text("DATOS DEL CLIENTE", 25, 58);
+        doc.text("DATOS DEL CLIENTE", 25, 58 + offset);
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(`Nombre: ${sale.customer_name || "Cliente General"}`, 25, 65);
-        doc.text(`CI/RIF: ${sale.customer_cedula || "N/A"}`, 25, 71);
-        doc.text(`Teléfono: ${sale.customer_phone || "N/A"}`, 25, 77);
-        doc.text(`Dirección: ${sale.customer_address || "N/A"}`, 25, 83);
+        doc.text(`Nombre: ${sale.customer_name || "Cliente General"}`, 25, 65 + offset);
+        doc.text(`CI/RIF: ${sale.customer_cedula || "N/A"}`, 25, 71 + offset);
+        doc.text(`Teléfono: ${sale.customer_phone || "N/A"}`, 25, 77 + offset);
+
+        // Wrap the client address to prevent overflow!
+        const clientAddressText = `Dirección: ${sale.customer_address || "N/A"}`;
+        const clientAddressLines = doc.splitTextToSize(clientAddressText, 160);
+        doc.text(clientAddressLines, 25, 83 + offset);
+
+        // Calculate tableStartY based on client address lines count
+        const tableStartY = 95 + offset + (clientAddressLines.length - 1) * 5;
 
         // --- Items Table ---
         const tableData = sale.items.map(item => {
@@ -86,7 +112,7 @@ export function SaleInvoice({ sale, rates, onClose }: SaleInvoiceProps) {
         });
 
         autoTable(doc, {
-            startY: 95,
+            startY: tableStartY,
             head: [['Descripción', 'Cant.', 'P. Unit (USD)', 'Total (USD)', 'Total (Bs)']],
             body: tableData,
             theme: 'striped',

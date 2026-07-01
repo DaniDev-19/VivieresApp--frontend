@@ -34,6 +34,72 @@ interface Customer {
     address?: string;
 }
 
+const WHATSAPP_TEMPLATES = [
+    {
+        id: "promo",
+        name: "Promo Semanal",
+        text: "¡Hola {nombre}! Te invitamos a conocer nuestras promociones especiales de esta semana en {negocio}. ¡No te las pierdas!"
+    },
+    {
+        id: "news",
+        name: "Nuevos Productos",
+        text: "¡Hola {nombre}! 🎉 Acabamos de recibir nueva mercancía en {negocio}. Puedes ver las novedades visitando nuestro catálogo online o acercándote a nuestra tienda. ¡Te esperamos!"
+    },
+    {
+        id: "payment",
+        name: "Recordatorio de Pago",
+        text: "Estimado(a) {nombre}, le escribimos desde {negocio} para recordarle de manera cordial que tiene un saldo pendiente de pago. Si ya realizó su pago, por favor ignore este mensaje. ¡Muchas gracias!"
+    },
+    {
+        id: "thanks",
+        name: "Agradecimiento",
+        text: "¡Hola {nombre}! Queríamos agradecerle por su última compra en {negocio}. Su preferencia es muy importante para nosotros. ¡Que tenga un excelente día!"
+    }
+];
+
+const EMAIL_TEMPLATES = [
+    {
+        id: "promo",
+        name: "Oferta Semanal",
+        subject: "¡Gran Oferta de la Semana en {negocio}!",
+        title: "¡Descuentos Exclusivos para Ti!",
+        body: "Hola {nombre},\n\nEsta semana tenemos grandes descuentos en todos nuestros productos. ¡Ven a visitarnos o haz tu pedido en línea!\n\nAtentamente,\nEl equipo de {negocio}",
+        ctaText: "Ver Catálogo",
+        ctaUrl: "https://viveresapp.com/catalogo",
+        imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600"
+    },
+    {
+        id: "news",
+        name: "Nueva Mercancía",
+        subject: "🎉 ¡Nueva Mercancía disponible en {negocio}!",
+        title: "¡Recién Llegado a Tienda!",
+        body: "Hola {nombre},\n\nNos complace informarte que hemos renovado nuestro stock con excelentes productos de alta calidad. Queremos que seas de los primeros en enterarte.\n\n¡Ingresa a nuestro catálogo digital y haz tu pedido antes de que se agoten!\n\nAtentamente,\nEl equipo de {negocio}",
+        ctaText: "Explorar Novedades",
+        ctaUrl: "https://viveresapp.com/catalogo",
+        imageUrl: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=600"
+    },
+    {
+        id: "thanks",
+        name: "Cupón Regalo",
+        subject: "🎁 Regalo Especial para {nombre} de {negocio}",
+        title: "¡Gracias por ser un cliente leal!",
+        body: "Hola {nombre},\n\nQueremos agradecer tu fidelidad con {negocio}. Por eso, te obsequiamos un cupón de descuento especial para tu próxima compra en línea o en tienda física.\n\nMuestra este correo al momento de pagar o usa el código FIDELIDAD en tu pedido web.\n\nAtentamente,\nEl equipo de {negocio}",
+        ctaText: "Ir a la Tienda",
+        ctaUrl: "https://viveresapp.com/catalogo",
+        imageUrl: "https://images.unsplash.com/photo-1512909006721-3d6018887383?w=600"
+    },
+    {
+        id: "payment",
+        name: "Cobro Pendiente",
+        subject: "⚠️ Recordatorio de Pago Pendiente - {negocio}",
+        title: "Información sobre su saldo pendiente",
+        body: "Estimado(a) {nombre},\n\nEsperamos que se encuentre bien. Le escribimos desde {negocio} para recordarle de manera atenta que posee un saldo pendiente de pago registrado en nuestro sistema.\n\nPuede ponerse en contacto con nosotros para conciliar el pago o consultar el saldo a través de este enlace.\n\nSi ya realizó su pago, por favor ignore este mensaje.\n\nAtentamente,\nEl departamento de administración de {negocio}",
+        ctaText: "Contactar Administración",
+        ctaUrl: "https://viveresapp.com/contacto",
+        imageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600"
+    }
+];
+
 export default function CampaignsPage() {
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
@@ -54,8 +120,8 @@ export default function CampaignsPage() {
         "Hola {nombre},\n\nEsta semana tenemos grandes descuentos en todos nuestros productos. ¡Ven a visitarnos o haz tu pedido en línea!\n\nAtentamente,\nEl equipo de {negocio}"
     );
     const [emailCtaText, setEmailCtaText] = useState("Ver Catálogo");
-    const [emailCtaUrl, setEmailCtaUrl] = useState("https://viveresapp.com/catalogo");
-    const [emailImageUrl, setEmailImageUrl] = useState("https://images.unsplash.com/photo-1542838132-92c53300491e?w=600");
+    const [emailCtaUrl, setEmailCtaUrl] = useState("https://www.instagram.com/spanyaracuy/");
+    const [emailImageUrl, setEmailImageUrl] = useState("https://i.imgur.com/OIOF6BN.jpg");
 
     // Track contacted customers in the current session
     const [contactedIds, setContactedIds] = useState<Set<number>>(new Set());
@@ -345,6 +411,28 @@ export default function CampaignsPage() {
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                                     Redactar Plantilla de Promoción
                                 </h3>
+
+                                <div className="space-y-1.5 border-b border-gray-150 pb-3 dark:border-gray-800">
+                                    <span className="block text-[10px] font-bold text-gray-450 dark:text-gray-450 uppercase tracking-wider">
+                                        Cargar Plantilla Rápida
+                                    </span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {WHATSAPP_TEMPLATES.map((tmpl) => (
+                                            <button
+                                                key={tmpl.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setMessageTemplate(tmpl.text);
+                                                    toast.success(`Plantilla "${tmpl.name}" cargada`);
+                                                }}
+                                                className="cursor-pointer px-2.5 py-1 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded border border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/40 transition-all font-medium"
+                                            >
+                                                {tmpl.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold text-gray-450 dark:text-gray-400 uppercase tracking-wider">
                                         Mensaje
@@ -514,6 +602,32 @@ export default function CampaignsPage() {
                                     <Layout className="w-5 h-5 text-indigo-500" />
                                     Plantilla de Correo Promocional
                                 </h3>
+
+                                <div className="space-y-1.5 border-b border-gray-150 pb-3 dark:border-gray-800">
+                                    <span className="block text-[10px] font-bold text-gray-450 dark:text-gray-450 uppercase tracking-wider">
+                                        Cargar Plantilla Rápida
+                                    </span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {EMAIL_TEMPLATES.map((tmpl) => (
+                                            <button
+                                                key={tmpl.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setEmailSubject(tmpl.subject);
+                                                    setEmailTitle(tmpl.title);
+                                                    setEmailBody(tmpl.body);
+                                                    setEmailCtaText(tmpl.ctaText);
+                                                    setEmailCtaUrl(tmpl.ctaUrl);
+                                                    setEmailImageUrl(tmpl.imageUrl);
+                                                    toast.success(`Plantilla "${tmpl.name}" cargada`);
+                                                }}
+                                                className="cursor-pointer px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/40 transition-all font-medium"
+                                            >
+                                                {tmpl.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1">

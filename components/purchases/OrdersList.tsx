@@ -693,9 +693,10 @@ export function OrdersList() {
         // QR Code
         doc.addImage(qrData, 'PNG', pageWidth - 45, y - 10, 30, 30);
 
-        // Save
-        doc.save(`Orden_${order.id}_${order.provider?.name?.replace(/\s+/g, '_') || 'Prov'}.pdf`);
-        toast.success("PDF Profesional Descargado. Abriendo WhatsApp...");
+        // Abrir PDF en nueva pestaña
+        const pdfUrl = doc.output('bloburl');
+        window.open(pdfUrl, '_blank');
+        toast.success("PDF Profesional abierto en nueva pestaña. Abriendo WhatsApp...");
 
         // 3. Open WhatsApp
         const phone = order.provider?.contact_info || "";

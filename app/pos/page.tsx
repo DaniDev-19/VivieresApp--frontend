@@ -57,7 +57,7 @@ export default function POSPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("Efectivo_USD");
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [customerForm, setCustomerForm] = useState({ cedula: "", name: "", phone: "" });
+  const [customerForm, setCustomerForm] = useState({ cedula: "", name: "", phone: "", email: "" });
   const [hasDelivery, setHasDelivery] = useState(false);
   const [deliveryAmount, setDeliveryAmount] = useState(0);
   const [chargeBinanceTax, setChargeBinanceTax] = useState(false);
@@ -934,11 +934,14 @@ export default function POSPage() {
               onSubmit={async (e) => {
                 e.preventDefault();
                 try {
-                  const { data } = await api.post("/customers", customerForm);
+                  const { data } = await api.post("/customers", {
+                    ...customerForm,
+                    email: customerForm.email.trim() || null,
+                  });
                   queryClient.invalidateQueries({ queryKey: ["customers"] });
                   setSelectedCustomer(data);
                   setShowCustomerModal(false);
-                  setCustomerForm({ cedula: "", name: "", phone: "" });
+                  setCustomerForm({ cedula: "", name: "", phone: "", email: "" });
                   toast.success("Cliente registrado exitosamente");
                 } catch (err: any) {
                   toast.error("Error al registrar cliente", {
@@ -955,6 +958,7 @@ export default function POSPage() {
                 </label>
                 <input
                   type="text"
+                  placeholder="v-2xxxxxxx"
                   required
                   value={customerForm.cedula}
                   onChange={(e) =>
@@ -973,6 +977,7 @@ export default function POSPage() {
                 <input
                   type="text"
                   required
+                  placeholder="ViveresApp"
                   value={customerForm.name}
                   onChange={(e) =>
                     setCustomerForm({ ...customerForm, name: e.target.value })
@@ -987,6 +992,7 @@ export default function POSPage() {
                 <input
                   type="tel"
                   required
+                  placeholder="04xx-xxxxxxx"
                   value={customerForm.phone}
                   onChange={(e) =>
                     setCustomerForm({
@@ -997,20 +1003,39 @@ export default function POSPage() {
                   className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Correo Electrónico
+                </label>
+                <input
+                  type="email"
+                  value={customerForm.email}
+                  onChange={(e) =>
+                    setCustomerForm({
+                      ...customerForm,
+                      email: e.target.value,
+                    })
+                  }
+                  placeholder="ViveresApp@correo.com (Opcional)"
+                  className="w-full rounded-lg border border-gray-200 p-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
               <div className="flex gap-2 pt-4">
                 <button
                   type="button"
+                  title="Cancelar"
                   onClick={() => {
                     setShowCustomerModal(false);
-                    setCustomerForm({ cedula: "", name: "", phone: "" });
+                    setCustomerForm({ cedula: "", name: "", phone: "", email: "" });
                   }}
-                  className="flex-1 rounded-xl bg-gray-100 py-2 font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  className="cursor-pointer flex-1 rounded-xl bg-gray-100 py-2 font-medium hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700"
+                  title="Registrar cliente"
+                  className="cursor-pointer flex-1 rounded-xl bg-indigo-600 py-2 font-medium text-white hover:bg-indigo-700"
                 >
                   Registrar
                 </button>

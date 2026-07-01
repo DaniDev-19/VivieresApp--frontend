@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "@/components/ui/pagination";
+import { useAuthStore } from "@/store/authStore";
 
 export default function UsersPage() {
     const queryClient = useQueryClient();
+    const { user: currentUser } = useAuthStore();
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -244,21 +246,40 @@ export default function UsersPage() {
 
                                                 {/* Enable/Disable Button */}
                                                 <button
-                                                    onClick={() => toggleStatusMutation.mutate({ id: user.id, is_active: !user.is_active })}
-                                                    className={`cursor-pointer p-2 rounded-lg transition-colors ${user.is_active
-                                                        ? "text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 dark:hover:text-orange-400"
-                                                        : "text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                                                    onClick={() => {
+                                                        if (user.id === currentUser?.id) {
+                                                            toast.error("No puedes desactivar tu propio usuario");
+                                                            return;
+                                                        }
+                                                        toggleStatusMutation.mutate({ id: user.id, is_active: !user.is_active });
+                                                    }}
+                                                    disabled={user.id === currentUser?.id}
+                                                    className={`p-2 rounded-lg transition-colors ${user.id === currentUser?.id
+                                                        ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                                        : user.is_active
+                                                            ? "text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 dark:hover:text-orange-400 cursor-pointer"
+                                                            : "text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 dark:hover:text-green-400 cursor-pointer"
                                                         }`}
-                                                    title={user.is_active ? "Desactivar" : "Activar"}
+                                                    title={user.id === currentUser?.id ? "No puedes desactivar tu propio usuario" : user.is_active ? "Desactivar" : "Activar"}
                                                 >
                                                     <Power className="h-4 w-4" />
                                                 </button>
 
                                                 {/* Hard Delete Button */}
                                                 <button
-                                                    onClick={() => confirmDelete(user)}
-                                                    className="cursor-pointer p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                                                    title="Eliminar permanentemente"
+                                                    onClick={() => {
+                                                        if (user.id === currentUser?.id) {
+                                                            toast.error("No puedes eliminar tu propio usuario");
+                                                            return;
+                                                        }
+                                                        confirmDelete(user);
+                                                    }}
+                                                    disabled={user.id === currentUser?.id}
+                                                    className={`p-2 rounded-lg transition-colors ${user.id === currentUser?.id
+                                                        ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                                        : "text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg dark:hover:bg-red-900/20 dark:hover:text-red-400 cursor-pointer"
+                                                        }`}
+                                                    title={user.id === currentUser?.id ? "No puedes eliminar tu propio usuario" : "Eliminar permanentemente"}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
@@ -345,14 +366,17 @@ export default function UsersPage() {
                                 </div>
 
                                 <div className="flex items-center pt-6">
-                                    <label className="flex items-center gap-2 cursor-pointer">
+                                    <label className={`flex items-center gap-2 ${editingUser?.id === currentUser?.id ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                                         <input
                                             type="checkbox"
                                             checked={formData.is_active}
+                                            disabled={editingUser?.id === currentUser?.id}
                                             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 disabled:opacity-50"
                                         />
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Usuario Activo</span>
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Usuario Activo {editingUser?.id === currentUser?.id && "(No puedes desactivarte)"}
+                                        </span>
                                     </label>
                                 </div>
                             </div>

@@ -286,7 +286,7 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] flex flex-col">
 
                 <div className="absolute -top-12 right-0 flex gap-2">
                     <button
@@ -315,145 +315,147 @@ export function SaleTicket({ sale, rates, onClose }: SaleTicketProps) {
 
 
                 {/* VISTA PREVIA EN PANTALLA (HTML) */}
-                <div className="ticket-body flex flex-col items-center text-center font-mono text-[11px] text-black leading-tight">
-                    <div className="mb-2 w-full">
-                        <h2 className="text-xl font-bold uppercase tracking-widest mb-1">{process.env.NEXT_PUBLIC_BUSINESS_NAME || "Víveres App"}</h2>
-                        <p className="text-[10px] text-gray-500 italic mb-2">{process.env.NEXT_PUBLIC_BUSINESS_DESCRIPTION || "\"Calidad y servicio a tu puerta\""}</p>
-                        <div className="border-y border-dashed border-gray-400 py-1 uppercase font-bold text-[9px]">
-                            RIF: {process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"} <br /> REF: {process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}
-                        </div>
-                    </div>
-
-                    <div className="flex w-full justify-between items-center my-2 text-[10px]">
-                        <span className="font-bold">FACTURA: #{sale.id.toString().padStart(6, '0')}</span>
-                        <span>{new Date(sale.created_at).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                    </div>
-
-                    {(sale.customer_name || sale.customer_cedula || sale.customer_email) && (
-                        <div className="w-full border border-dashed border-gray-400 rounded p-1.5 mb-2 text-left bg-gray-50">
-                            <div className="text-[9px] font-bold border-b border-gray-200 mb-1 pb-0.5">DATOS DEL CLIENTE</div>
-                            {sale.customer_name && <div className="text-[10px] font-medium">{sale.customer_name}</div>}
-                            <div className="flex flex-col gap-0.5 text-[9px] text-gray-600">
-                                {sale.customer_cedula && <span>CI: {sale.customer_cedula}</span>}
-                                {sale.customer_email && <span className="truncate">Email: {sale.customer_email}</span>}
+                <div className="overflow-y-auto pr-1 flex-1 min-h-0 custom-scrollbar">
+                    <div className="ticket-body flex flex-col items-center text-center font-mono text-[11px] text-black leading-tight">
+                        <div className="mb-2 w-full">
+                            <h2 className="text-xl font-bold uppercase tracking-widest mb-1">{process.env.NEXT_PUBLIC_BUSINESS_NAME || "Víveres App"}</h2>
+                            <p className="text-[10px] text-gray-500 italic mb-2">{process.env.NEXT_PUBLIC_BUSINESS_DESCRIPTION || "\"Calidad y servicio a tu puerta\""}</p>
+                            <div className="border-y border-dashed border-gray-400 py-1 uppercase font-bold text-[9px]">
+                                RIF: {process.env.NEXT_PUBLIC_BUSINESS_RIF || "J-12345678-9"} <br /> REF: {process.env.NEXT_PUBLIC_BUSINESS_PHONE || "0412-1234567"}
                             </div>
                         </div>
-                    )}
 
-
-                    <div className="w-full border-b border-dashed border-gray-400 pb-1 mb-1">
-                        <div className="flex w-full text-[9px] font-bold border-b border-gray-300 mb-1 pb-1">
-                            <span className="w-[45%] text-left">DESCRIPCION</span>
-                            <span className="w-[10%] text-center">CNT</span>
-                            <span className="w-[45%] text-right">TOTAL</span>
+                        <div className="flex w-full justify-between items-center my-2 text-[10px]">
+                            <span className="font-bold">FACTURA: #{sale.id.toString().padStart(6, '0')}</span>
+                            <span>{new Date(sale.created_at).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })}</span>
                         </div>
-                        {sale.items.map((item, idx) => {
-                            const itemTotal = item.quantity * item.unit_price_usd;
-                            const itemTotalBs = itemTotal * effectiveRate;
-                            return (
-                                <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
-                                    <div className="flex w-full justify-between">
-                                        <span className="w-[45%] text-left wrap-break-word pr-1 font-medium">{item.name || `Item #${item.product_id}`}</span>
-                                        <span className="w-[10%] text-center">{item.quantity}</span>
-                                        <span className="w-[45%] text-right font-bold">${itemTotal.toFixed(2)}</span>
-                                    </div>
-                                    {(item.code || item.barcode) && (
+
+                        {(sale.customer_name || sale.customer_cedula || sale.customer_email) && (
+                            <div className="w-full border border-dashed border-gray-400 rounded p-1.5 mb-2 text-left bg-gray-50">
+                                <div className="text-[9px] font-bold border-b border-gray-200 mb-1 pb-0.5">DATOS DEL CLIENTE</div>
+                                {sale.customer_name && <div className="text-[10px] font-medium">{sale.customer_name}</div>}
+                                <div className="flex flex-col gap-0.5 text-[9px] text-gray-600">
+                                    {sale.customer_cedula && <span>CI: {sale.customer_cedula}</span>}
+                                    {sale.customer_email && <span className="truncate">Email: {sale.customer_email}</span>}
+                                </div>
+                            </div>
+                        )}
+
+
+                        <div className="w-full border-b border-dashed border-gray-400 pb-1 mb-1">
+                            <div className="flex w-full text-[9px] font-bold border-b border-gray-300 mb-1 pb-1">
+                                <span className="w-[45%] text-left">DESCRIPCION</span>
+                                <span className="w-[10%] text-center">CNT</span>
+                                <span className="w-[45%] text-right">TOTAL</span>
+                            </div>
+                            {sale.items.map((item, idx) => {
+                                const itemTotal = item.quantity * item.unit_price_usd;
+                                const itemTotalBs = itemTotal * effectiveRate;
+                                return (
+                                    <div key={idx} className="flex flex-col w-full py-0.5 text-[10px] border-b border-dotted border-gray-200 last:border-0">
                                         <div className="flex w-full justify-between">
-                                            <span className="w-[45%] text-left text-[8px] italic text-gray-500">Código: {item.code || item.barcode}</span>
+                                            <span className="w-[45%] text-left wrap-break-word pr-1 font-medium">{item.name || `Item #${item.product_id}`}</span>
+                                            <span className="w-[10%] text-center">{item.quantity}</span>
+                                            <span className="w-[45%] text-right font-bold">${itemTotal.toFixed(2)}</span>
                                         </div>
-                                    )}
-                                    <div className="flex w-full justify-end">
-                                        <span className="text-[8px] text-gray-500 italic">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(itemTotalBs)}</span>
+                                        {(item.code || item.barcode) && (
+                                            <div className="flex w-full justify-between">
+                                                <span className="w-[45%] text-left text-[8px] italic text-gray-500">Código: {item.code || item.barcode}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex w-full justify-end">
+                                            <span className="text-[8px] text-gray-500 italic">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(itemTotalBs)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="w-full flex flex-col gap-0.5 mt-1 border-b border-dashed border-gray-400 pb-1">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="font-bold text-gray-600">SUBTOTAL:</span>
+                                <div className="text-right">
+                                    <span className="block font-bold">${(sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)).toFixed(2)}</span>
+                                    <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)) * effectiveRate)}</span>
+                                </div>
+                            </div>
+
+                            {(sale.total_tax_usd && sale.total_tax_usd > 0) ? (
+                                <div className="flex justify-between text-[10px]">
+                                    <span className="font-bold text-gray-600">IVA:</span>
+                                    <div className="text-right">
+                                        <span className="block font-bold">${(sale.total_tax_usd).toFixed(2)}</span>
+                                        <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_tax_usd) * effectiveRate)}</span>
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
+                            ) : null}
 
-                    <div className="w-full flex flex-col gap-0.5 mt-1 border-b border-dashed border-gray-400 pb-1">
-                        <div className="flex justify-between text-[10px]">
-                            <span className="font-bold text-gray-600">SUBTOTAL:</span>
+                            {(sale.delivery_amount_usd && sale.delivery_amount_usd > 0) ? (
+                                <div className="flex justify-between text-[10px]">
+                                    <span className="font-bold text-gray-600">DELIVERY:</span>
+                                    <div className="text-right">
+                                        <span className="block font-bold">${sale.delivery_amount_usd.toFixed(2)}</span>
+                                        <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.delivery_amount_usd * effectiveRate)}</span>
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+
+                        <div className="w-full flex justify-between items-center mt-2 border-b border-dashed border-gray-400 pb-2">
+                            <span className="text-[12px] font-black uppercase">TOTAL:</span>
                             <div className="text-right">
-                                <span className="block font-bold">${(sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)).toFixed(2)}</span>
-                                <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_amount_usd - (sale.total_tax_usd || 0) - (sale.delivery_amount_usd || 0)) * effectiveRate)}</span>
+                                <span className="block text-[14px] font-black text-black">${sale.total_amount_usd.toFixed(2)}</span>
+                                <span className="block text-[10px] font-bold text-gray-700">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_amount_usd * effectiveRate)}</span>
                             </div>
                         </div>
 
-                        {(sale.total_tax_usd && sale.total_tax_usd > 0) ? (
-                            <div className="flex justify-between text-[10px]">
-                                <span className="font-bold text-gray-600">IVA:</span>
-                                <div className="text-right">
-                                    <span className="block font-bold">${(sale.total_tax_usd).toFixed(2)}</span>
-                                    <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format((sale.total_tax_usd) * effectiveRate)}</span>
+                        {/* Rate ocultada por solicitud del usuario */}
+
+                        <div className="w-full mt-1">
+                            <div className="text-[9px] font-bold mb-1 text-left uppercase border-b border-gray-200">Métodos de Pago</div>
+                            {sale.payments?.map((p, idx) => (
+                                <div key={idx} className="flex justify-between text-[9px] mb-0.5">
+                                    <span className="uppercase text-gray-600">{p.method.replace('_', ' ')}</span>
+                                    <span className="font-medium">
+                                        {p.currency === 'VES' ?
+                                            `Bs. ${new Intl.NumberFormat('es-VE').format(p.amount)}` :
+                                            `$${p.amount.toFixed(2)}`
+                                        }
+                                    </span>
                                 </div>
-                            </div>
-                        ) : null}
-
-                        {(sale.delivery_amount_usd && sale.delivery_amount_usd > 0) ? (
-                            <div className="flex justify-between text-[10px]">
-                                <span className="font-bold text-gray-600">DELIVERY:</span>
-                                <div className="text-right">
-                                    <span className="block font-bold">${sale.delivery_amount_usd.toFixed(2)}</span>
-                                    <span className="block text-[8px] text-gray-500">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.delivery_amount_usd * effectiveRate)}</span>
-                                </div>
-                            </div>
-                        ) : null}
-                    </div>
-
-                    <div className="w-full flex justify-between items-center mt-2 border-b border-dashed border-gray-400 pb-2">
-                        <span className="text-[12px] font-black uppercase">TOTAL:</span>
-                        <div className="text-right">
-                            <span className="block text-[14px] font-black text-black">${sale.total_amount_usd.toFixed(2)}</span>
-                            <span className="block text-[10px] font-bold text-gray-700">Bs. {new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(sale.total_amount_usd * effectiveRate)}</span>
-                        </div>
-                    </div>
-
-                    {/* Rate ocultada por solicitud del usuario */}
-
-                    <div className="w-full mt-1">
-                        <div className="text-[9px] font-bold mb-1 text-left uppercase border-b border-gray-200">Métodos de Pago</div>
-                        {sale.payments?.map((p, idx) => (
-                            <div key={idx} className="flex justify-between text-[9px] mb-0.5">
-                                <span className="uppercase text-gray-600">{p.method.replace('_', ' ')}</span>
-                                <span className="font-medium">
-                                    {p.currency === 'VES' ?
-                                        `Bs. ${new Intl.NumberFormat('es-VE').format(p.amount)}` :
-                                        `$${p.amount.toFixed(2)}`
-                                    }
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="w-full mt-4 flex flex-col items-center gap-2 pt-2 border-t border-dashed border-gray-400">
-                        {/* Barcode Canvas - Renderer Canvas IMPORTANTE para poder exportar a PDF */}
-                        <div id="ticket-barcode" className="scale-90 origin-center">
-                            <Barcode
-                                value={sale.id.toString().padStart(10, '0')}
-                                width={1.2}
-                                height={30}
-                                fontSize={10}
-                                displayValue={false}
-                                renderer="canvas"
-                            />
+                            ))}
                         </div>
 
-                        {/* QR Canvas - QRCodeCanvas IMPORTANTE para exportar */}
-                        <div id="ticket-qr" className="mt-1 flex flex-col items-center">
-                            <QRCodeCanvas
-                                value={JSON.stringify({
-                                    id: sale.id,
-                                    total: sale.total_amount_usd,
-                                    date: sale.created_at
-                                })}
-                                size={60}
-                                level="M"
-                            />
-                            <p className="text-[8px] text-gray-400 mt-1">Escanea para verificar</p>
-                            <p className="text-[7px] text-gray-300 mt-2 font-bold uppercase tracking-widest">Powered by ViveresApp</p>
-                        </div>
-                    </div>
+                        <div className="w-full mt-4 flex flex-col items-center gap-2 pt-2 border-t border-dashed border-gray-400">
+                            {/* Barcode Canvas - Renderer Canvas IMPORTANTE para poder exportar a PDF */}
+                            <div id="ticket-barcode" className="scale-90 origin-center">
+                                <Barcode
+                                    value={sale.id.toString().padStart(10, '0')}
+                                    width={1.2}
+                                    height={30}
+                                    fontSize={10}
+                                    displayValue={false}
+                                    renderer="canvas"
+                                />
+                            </div>
 
+                            {/* QR Canvas - QRCodeCanvas IMPORTANTE para exportar */}
+                            <div id="ticket-qr" className="mt-1 flex flex-col items-center">
+                                <QRCodeCanvas
+                                    value={JSON.stringify({
+                                        id: sale.id,
+                                        total: sale.total_amount_usd,
+                                        date: sale.created_at
+                                    })}
+                                    size={60}
+                                    level="M"
+                                    />
+                                <p className="text-[8px] text-gray-400 mt-1">Escanea para verificar</p>
+                                <p className="text-[7px] text-gray-300 mt-2 font-bold uppercase tracking-widest">Powered by ViveresApp</p>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
